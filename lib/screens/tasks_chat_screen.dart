@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/chat_input_widget.dart';
 import '../widgets/chat_response_widget.dart';
 import '../widgets/tasks_title_widget.dart';
+import '../services/chat_service.dart';
 
 class TasksChatScreen extends StatefulWidget {
   const TasksChatScreen({Key? key}) : super(key: key);
@@ -13,6 +14,7 @@ class TasksChatScreen extends StatefulWidget {
 
 class _TasksChatScreenState extends State<TasksChatScreen> {
   final TextEditingController _chatController = TextEditingController();
+  final ChatService _chatService = ChatService();
   String _llmResponse = '';
   bool _isLoading = false;
 
@@ -22,30 +24,38 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
     super.dispose();
   }
 
-  void _handleSendMessage(String message) {
-    // TODO: Implement LLM logic here
-    print('Message sent: $message');
+  void _handleSendMessage(String message) async {
+    if (message.trim().isEmpty) return;
 
     setState(() {
       _isLoading = true;
+      _llmResponse = '';
     });
 
-    // Placeholder for LLM response logic
-    // This will be implemented later
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      final response = await _chatService.processUserMessage(message);
+
       if (mounted) {
         setState(() {
-          _llmResponse = 'This is where the LLM response will appear...';
+          _llmResponse = response;
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _llmResponse = 'Sorry, something went wrong. Please try again.';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [
