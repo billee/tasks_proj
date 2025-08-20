@@ -1,7 +1,7 @@
 // lib/widgets/chat_input_widget.dart
 import 'package:flutter/material.dart';
 
-class ChatInputWidget extends StatelessWidget {
+class ChatInputWidget extends StatefulWidget {
   final TextEditingController controller;
   final Function(String) onSendMessage;
 
@@ -11,11 +11,19 @@ class ChatInputWidget extends StatelessWidget {
     required this.onSendMessage,
   }) : super(key: key);
 
+  @override
+  State<ChatInputWidget> createState() => _ChatInputWidgetState();
+}
+
+class _ChatInputWidgetState extends State<ChatInputWidget> {
   void _sendMessage() {
-    final message = controller.text.trim();
+    final message = widget.controller.text.trim();
     if (message.isNotEmpty) {
-      onSendMessage(message);
-      controller.clear();
+      // Hide keyboard immediately
+      FocusScope.of(context).unfocus();
+
+      widget.onSendMessage(message);
+      widget.controller.clear();
     }
   }
 
@@ -25,13 +33,15 @@ class ChatInputWidget extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.grey[900],
-        border: Border(top: BorderSide(color: Colors.grey[700]!, width: 1.0)),
+        border: Border(
+          top: BorderSide(color: Colors.grey[700]!, width: 1.0),
+        ),
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              controller: controller,
+              controller: widget.controller,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'What task do you want me to do?',
@@ -62,7 +72,11 @@ class ChatInputWidget extends StatelessWidget {
                 color: Colors.blue[600],
                 borderRadius: BorderRadius.circular(24.0),
               ),
-              child: const Icon(Icons.send, color: Colors.white, size: 20.0),
+              child: const Icon(
+                Icons.send,
+                color: Colors.white,
+                size: 20.0,
+              ),
             ),
           ),
         ],
