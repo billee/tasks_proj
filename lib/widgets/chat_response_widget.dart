@@ -40,7 +40,7 @@ class ChatResponseWidget extends StatelessWidget {
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
           strokeWidth: 2.0,
         ),
-        const SizedBox(height: 16.0),
+        SizedBox(height: 16.0),
         Text(
           'Thinking...',
           style: TextStyle(
@@ -60,7 +60,7 @@ class ChatResponseWidget extends StatelessWidget {
           size: 48.0,
           color: Colors.white30,
         ),
-        const SizedBox(height: 16.0),
+        SizedBox(height: 16.0),
         Text(
           'Ask me what task you need help with!',
           style: TextStyle(

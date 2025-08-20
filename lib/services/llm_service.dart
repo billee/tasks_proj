@@ -1,5 +1,5 @@
 // lib/services/llm_service.dart
-import 'dart:convert';
+//import 'dart:convert';
 import 'dart:math';
 import '../models/llm_models.dart';
 import 'tool_service.dart';
@@ -11,9 +11,9 @@ class LLMService {
   Future<LLMResponse> sendMessage(String userMessage) async {
     try {
       // Prepare available tools
-      final tools = _getAvailableTools();
+      //final tools = _getAvailableTools();
 
-      final request = LLMRequest(message: userMessage, tools: tools);
+      //final request = LLMRequest(message: userMessage, tools: tools);
 
       // Simulate API delay
       await Future.delayed(const Duration(seconds: 2));
@@ -59,33 +59,33 @@ class LLMService {
     return results.join('\n\n');
   }
 
-  List<LLMTool> _getAvailableTools() {
-    return [
-      LLMTool(
-        name: 'create_email',
-        description:
-            'Creates an email with specified recipient, subject, and content',
-        parameters: {
-          'type': 'object',
-          'properties': {
-            'recipient': {
-              'type': 'string',
-              'description': 'Email address of the recipient',
-            },
-            'subject': {
-              'type': 'string',
-              'description': 'Subject line of the email',
-            },
-            'content': {
-              'type': 'string',
-              'description': 'Body content of the email',
-            },
-          },
-          'required': ['recipient', 'subject', 'content'],
-        },
-      ),
-    ];
-  }
+  // List<LLMTool> _getAvailableTools() {
+  //   return [
+  //     LLMTool(
+  //       name: 'create_email',
+  //       description:
+  //           'Creates an email with specified recipient, subject, and content',
+  //       parameters: {
+  //         'type': 'object',
+  //         'properties': {
+  //           'recipient': {
+  //             'type': 'string',
+  //             'description': 'Email address of the recipient',
+  //           },
+  //           'subject': {
+  //             'type': 'string',
+  //             'description': 'Subject line of the email',
+  //           },
+  //           'content': {
+  //             'type': 'string',
+  //             'description': 'Body content of the email',
+  //           },
+  //         },
+  //         'required': ['recipient', 'subject', 'content'],
+  //       },
+  //     ),
+  //   ];
+  // }
 
   bool _shouldCreateEmail(String message) {
     final emailKeywords = [

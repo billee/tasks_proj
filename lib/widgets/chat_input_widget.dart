@@ -45,7 +45,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'What task do you want me to do?',
-                hintStyle: TextStyle(color: Colors.white54),
+                hintStyle: const TextStyle(color: Colors.white54),
                 filled: true,
                 fillColor: Colors.grey[800],
                 border: OutlineInputBorder(
