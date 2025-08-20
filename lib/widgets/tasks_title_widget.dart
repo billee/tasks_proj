@@ -10,7 +10,7 @@ class TasksTitleWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
       width: double.infinity,
       child: const Text(
-        'Tasks To Do....',
+        'Tasks To Do',
         style: TextStyle(
           color: Colors.white,
           fontSize: 28.0,
