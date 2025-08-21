@@ -2,7 +2,16 @@
 import 'llm_service.dart';
 
 class ChatService {
-  final LLMService _llmService = LLMService();
+  // =========================================================
+  // Hard code to use OpenAI GPT-4o-mini
+  final LLMService _llmService = LLMService(provider: LLMProviderType.openai);
+
+  ChatService() {
+    // =========================================================
+    // Ensure we're using OpenAI provider (GPT-4o-mini)
+    // This is redundant since we set it in constructor, but makes intent clear
+    _llmService.setProvider(LLMProviderType.openai);
+  }
 
   Future<String> processUserMessage(String userMessage) async {
     try {
@@ -26,5 +35,10 @@ class ChatService {
     } catch (e) {
       return 'Sorry, I encountered an error while processing your message: ${e.toString()}';
     }
+  }
+
+  // Optional: Method to get info about the hardcoded model being used
+  String getCurrentModelInfo() {
+    return 'Using ${_llmService.currentProvider.providerName} - ${_llmService.currentProvider.modelName}';
   }
 }
