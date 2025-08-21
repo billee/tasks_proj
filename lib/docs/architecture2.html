@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flutter App Architecture - Complete System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Taurus, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow-x: auto;
+        }
+        
+        .architecture-container {
+            min-width: 1800px;
+            height: 1200px;
+            position: relative;
+            background: rgba(52, 73, 94, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .layer {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .layer:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .ui-layer {
+            top: 20px;
+            left: 20px;
+            width: 480px;
+            height: 280px;
+        }
+        
+        .service-layer {
+            top: 20px;
+            right: 20px;
+            width: 380px;
+            height: 280px;
+        }
+        
+        .llm-provider-layer {
+            top: 320px;
+            left: 20px;
+            width: 600px;
+            height: 280px;
+            border-color: rgba(46, 204, 113, 0.6);
+            background: rgba(46, 204, 113, 0.12);
+        }
+        
+        .orchestration-layer {
+            top: 320px;
+            right: 20px;
+            width: 500px;
+            height: 280px;
+            border-color: rgba(230, 126, 34, 0.6);
+            background: rgba(230, 126, 34, 0.12);
+        }
+        
+        .tool-services-layer {
+            top: 620px;
+            left: 20px;
+            width: 800px;
+            height: 320px;
+            border-color: rgba(155, 89, 182, 0.6);
+            background: rgba(155, 89, 182, 0.12);
+        }
+        
+        .model-layer {
+            top: 620px;
+            right: 20px;
+            width: 380px;
+            height: 200px;
+        }
+        
+        .config-layer {
+            top: 960px;
+            left: 20px;
+            width: 280px;
+            height: 200px;
+        }
+        
+        .base-services-layer {
+            top: 960px;
+            left: 320px;
+            width: 380px;
+            height: 200px;
+            border-color: rgba(52, 152, 219, 0.6);
+            background: rgba(52, 152, 219, 0.12);
+        }
+        
+        .layer-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ecf0f1;
+            margin-bottom: 18px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .component {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 8px 0;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .component:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .new-component {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.2);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 8px rgba(46, 204, 113, 0.5); }
+            to { box-shadow: 0 0 20px rgba(46, 204, 113, 0.9); }
+        }
+        
+        .core-component {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.2);
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+        }
+        
+        .orchestrator-component {
+            border-color: #f39c12;
+            background: rgba(243, 156, 18, 0.2);
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.3);
+        }
+        
+        .base-provider {
+            background: rgba(52, 152, 219, 0.2);
+            border-color: #3498db;
+        }
+        
+        .provider-component {
+            background: rgba(230, 126, 34, 0.2);
+            border-color: #e67e22;
+        }
+        
+        .service-component {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: #e74c3c;
+        }
+        
+        .tool-service {
+            background: rgba(155, 89, 182, 0.2);
+            border-color: #9b59b6;
+        }
+        
+        .arrow {
+            position: absolute;
+            z-index: 10;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+        
+        .arrow-right {
+            width: 50px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .arrow-right::after {
+            right: -8px;
+            top: -4px;
+            border-left: 8px solid rgba(255, 255, 255, 0.7);
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+        
+        .arrow-down {
+            width: 2px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .arrow-down::after {
+            bottom: -8px;
+            left: -4px;
+            border-top: 8px solid rgba(255, 255, 255, 0.7);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+        }
+        
+        .arrow-curved {
+            width: 80px;
+            height: 80px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            border-left: none;
+            border-bottom: none;
+            transform: rotate(45deg);
+        }
+        
+        .flow-label {
+            position: absolute;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        
+        .feature-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-size: 10px;
+            border-left: 3px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .feature-box strong {
+            color: #ecf0f1;
+            font-size: 11px;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .triple-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+    <div class="architecture-container">
+        <!-- UI Layer -->
+        <div class="layer ui-layer">
+            <div class="layer-title">UI Layer (Widgets)</div>
+            <div class="component">tasks_chat_screen.dart<br><span style="font-size: 9px; opacity: 0.8;">Main Chat Interface</span></div>
+            <div class="grid-layout">
+                <div class="component">chat_input_widget.dart<br><span style="font-size: 9px; opacity: 0.8;">User Input</span></div>
+                <div class="component">tasks_title_widget.dart<br><span style="font-size: 9px; opacity: 0.8;">Header</span></div>
+            </div>
+            <div class="component">chat_response_widget.dart<br><span style="font-size: 9px; opacity: 0.8;">Response Display</span></div>
+        </div>
+
+        <!-- Service Layer -->
+        <div class="layer service-layer">
+            <div class="layer-title">Service Layer (Business Logic)</div>
+            <div class="component core-component service-component">chat_service.dart<br><span style="font-size: 9px; opacity: 0.8;">Orchestrates Chat Flow</span></div>
+            <div class="component core-component service-component">llm_service.dart<br><span style="font-size: 9px; opacity: 0.8;">LLM API Coordination</span></div>
+        </div>
+
+        <!-- LLM Provider Layer -->
+        <div class="layer llm-provider-layer">
+            <div class="layer-title">LLM Provider Layer (Multi-Provider Support)</div>
+            <div class="component new-component base-provider">base_llm_provider.dart<br><span style="font-size: 9px; opacity: 0.8;">Abstract Provider Interface</span></div>
+            <div class="triple-layout">
+                <div class="component new-component provider-component">openai_provider.dart<br><span style="font-size: 9px; opacity: 0.8;">OpenAI GPT-4</span></div>
+                <div class="component new-component provider-component">deepseek_provider.dart<br><span style="font-size: 9px; opacity: 0.8;">DeepSeek API</span></div>
+                <div class="component new-component provider-component">llama_provider.dart<br><span style="font-size: 9px; opacity: 0.8;">Llama Models</span></div>
+            </div>
+            <div class="feature-box">
+                <strong>Features:</strong><br>
+                • Native tool calling (OpenAI, DeepSeek)<br>
+                • JSON parsing fallback (Llama)<br>
+                • Unified interface abstraction<br>
+                • Runtime provider switching
+            </div>
+        </div>
+
+        <!-- Tool Orchestration Layer -->
+        <div class="layer orchestration-layer">
+            <div class="layer-title">Tool Orchestration Layer</div>
+            <div class="component new-component orchestrator-component core-component">tool_orchestrator.dart<br><span style="font-size: 9px; opacity: 0.8;">Central Tool Coordinator</span></div>
+            <div class="component new-component orchestrator-component">tool_registry.dart<br><span style="font-size: 9px; opacity: 0.8;">Service Registration</span></div>
+            <div class="feature-box">
+                <strong>Capabilities:</strong><br>
+                • Multi-service coordination<br>
+                • Concurrent tool execution<br>
+                • Execution interceptors<br>
+                • Error handling & recovery<br>
+                • Tool result aggregation
+            </div>
+        </div>
+
+        <!-- Tool Services Layer -->
+        <div class="layer tool-services-layer">
+            <div class="layer-title">Tool Services Layer (Extensible Architecture)</div>
+            <div class="component new-component tool-service core-component">base_tool_service.dart<br><span style="font-size: 9px; opacity: 0.8;">Abstract Tool Service Base</span></div>
+            <div class="grid-layout">
+                <div class="component new-component tool-service">email_tool_service.dart<br><span style="font-size: 9px; opacity: 0.8;">Email Operations</span></div>
+                <div class="component tool-service" style="opacity: 0.6; border-style: dashed;">weather_tool_service.dart<br><span style="font-size: 9px; opacity: 0.8;">Weather API (Future)</span></div>
+            </div>
+            <div class="grid-layout">
+                <div class="component tool-service" style="opacity: 0.6; border-style: dashed;">calendar_tool_service.dart<br><span style="font-size: 9px; opacity: 0.8;">Calendar Mgmt (Future)</span></div>
+                <div class="component tool-service" style="opacity: 0.6; border-style: dashed;">file_tool_service.dart<br><span style="font-size: 9px; opacity: 0.8;">File Operations (Future)</span></div>
+            </div>
+            <div class="feature-box">
+                <strong>Email Service Tools:</strong><br>
+                • create_email (validation, queuing)<br>
+                • get_email_status (delivery tracking)<br>
+                • get_email_history (with filtering)<br>
+                <br><strong>Architecture:</strong><br>
+                • Parameter validation<br>
+                • Error handling hierarchy<br>
+                • Realistic simulation & delays<br>
+                • In-memory status tracking
+            </div>
+        </div>
+
+        <!-- Model Layer -->
+        <div class="layer model-layer">
+            <div class="layer-title">Model Layer (Data Structures)</div>
+            <div class="component">llm_models.dart<br><span style="font-size: 9px; opacity: 0.8;">Core Data Models</span></div>
+            <div class="feature-box">
+                <strong>Key Models:</strong><br>
+                • LLMResponse & ToolCall<br>
+                • EmailCreationResult<br>
+                • EmailStatus<br>
+                • ToolResult hierarchy<br>
+                • LLMToolExecutionResult
+            </div>
+        </div>
+
+        <!-- Base Services Layer -->
+        <div class="layer base-services-layer">
+            <div class="layer-title">Base Services & Exceptions</div>
+            <div class="component new-component">base_tool_service.dart<br><span style="font-size: 9px; opacity: 0.8;">Service Foundation</span></div>
+            <div class="feature-box">
+                <strong>Provides:</strong><br>
+                • Parameter validation<br>
+                • Exception hierarchy<br>
+                • Result standardization<br>
+                • Service identification<br>
+                • Tool registration interface
+            </div>
+        </div>
+
+        <!-- Configuration Layer -->
+        <div class="layer config-layer">
+            <div class="layer-title">Configuration & Setup</div>
+            <div class="component">main.dart<br><span style="font-size: 9px; opacity: 0.8;">App Entry + Init</span></div>
+            <div class="component">.env<br><span style="font-size: 9px; opacity: 0.8;">API Keys & Config</span></div>
+            <div class="component">pubspec.yaml<br><span style="font-size: 9px; opacity: 0.8;">Dependencies</span></div>
+        </div>
+
+        <!-- Flow Arrows and Labels -->
+        
+        <!-- UI to Service -->
+        <div class="arrow arrow-right" style="top: 160px; left: 520px;"></div>
+        <div class="flow-label" style="top: 148px; left: 535px;">User Input</div>
+        
+        <!-- Service to UI -->
+        <div class="arrow arrow-right" style="top: 190px; right: 420px; transform: rotate(180deg);"></div>
+        <div class="flow-label" style="top: 178px; right: 430px;">Response</div>
+        
+        <!-- Service to LLM Provider -->
+        <div class="arrow arrow-down" style="top: 310px; left: 280px;"></div>
+        <div class="flow-label" style="top: 325px; left: 295px;">LLM Request</div>
+        
+        <!-- Service to Orchestrator -->
+        <div class="arrow arrow-down" style="top: 310px; right: 280px;"></div>
+        <div class="flow-label" style="top: 325px; right: 250px;">Tool Execution</div>
+        
+        <!-- Orchestrator to Tool Services -->
+        <div class="arrow arrow-down" style="top: 610px; left: 500px;"></div>
+        <div class="flow-label" style="top: 625px; left: 515px;">Execute Tools</div>
+        
+        <!-- Tool Services to Models -->
+        <div class="arrow arrow-right" style="top: 720px; left: 840px;"></div>
+        <div class="flow-label" style="top: 708px; left: 855px;">Data Models</div>
+        
+        <!-- Config to Base Services -->
+        <div class="arrow arrow-right" style="top: 1060px; left: 320px;"></div>
+        <div class="flow-label" style="top: 1048px; left: 335px;">Initialize</div>
+        
+        <!-- Base Services to Tool Services -->
+        <div class="arrow arrow-curved" style="top: 840px; left: 550px;"></div>
+        <div class="flow-label" style="top: 870px; left: 580px;">Extends</div>
+        
+        <!-- LLM Provider feedback -->
+        <div class="arrow arrow-right" style="top: 460px; left: 640px;"></div>
+        <div class="flow-label" style="top: 448px; left: 655px;">Tool Definitions</div>
+
+        <!-- Orchestrator Internal Flow -->
+        <div class="arrow arrow-right" style="top: 420px; right: 150px; transform: rotate(180deg); width: 30px;"></div>
+        <div class="flow-label" style="top: 408px; right: 160px;">Registry</div>
+    </div>
+
+    <script>
+        // Enhanced hover effects and interactions
+        document.querySelectorAll('.component').forEach(component => {
+            component.addEventListener('click', function() {
+                if (this.style.transform.includes('scale(1.1)')) {
+                    this.style.transform = this.style.transform.replace('scale(1.1)', 'scale(1)');
+                } else {
+                    this.style.transform += ' scale(1.1)';
+                }
+            });
+        });
+
+        // Provider switching animation
+        const providers = document.querySelectorAll('.provider-component');
+        let currentProvider = 0;
+        
+        setInterval(() => {
+            providers.forEach((p, i) => {
+                p.style.opacity = i === currentProvider ? '1' : '0.7';
+                if (i === currentProvider) {
+                    p.classList.add('pulse');
+                } else {
+                    p.classList.remove('pulse');
+                }
+            });
+            currentProvider = (currentProvider + 1) % providers.length;
+        }, 3000);
+
+        // Tool service highlighting
+        const toolServices = document.querySelectorAll('.tool-service');
+        let highlightIndex = 0;
+        
+        setInterval(() => {
+            toolServices.forEach((service, i) => {
+                if (i === highlightIndex && !service.style.borderStyle) {
+                    service.style.boxShadow = '0 0 15px rgba(155, 89, 182, 0.6)';
+                } else {
+                    service.style.boxShadow = service.classList.contains('new-component') ? 
+                        '0 0 10px rgba(155, 89, 182, 0.3)' : '';
+                }
+            });
+            highlightIndex = (highlightIndex + 1) % toolServices.length;
+        }, 4000);
+
+        // Orchestrator components pulsing
+        const orchestratorComponents = document.querySelectorAll('.orchestrator-component');
+        setInterval(() => {
+            orchestratorComponents.forEach(comp => {
+                comp.classList.toggle('pulse');
+            });
+        }, 5000);
+
+        // Core components highlighting
+        document.querySelectorAll('.core-component').forEach(comp => {
+            comp.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.05)';
+                this.style.boxShadow = '0 8px 25px rgba(231, 76, 60, 0.4)';
+            });
+            
+            comp.addEventListener('mouseleave', function() {
+                this.style.transform = '';
+                this.style.boxShadow = '';
+            });
+        });
+    </script>
+</body>
+</html>
