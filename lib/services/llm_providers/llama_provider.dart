@@ -3,28 +3,23 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../models/llm_models.dart';
+import '../../config/llm_config.dart';
 import 'base_llm_provider.dart';
 
 class LlamaProvider extends BaseLLMProvider {
-  // Using Together AI or Groq for Llama access
-  static const String _baseUrl =
-      'https://api.together.xyz/v1'; // or 'https://api.groq.com/openai/v1'
+  @override
+  String get providerName => LLMConfig.llamaProviderName;
 
   @override
-  String get providerName => 'Llama';
+  String get modelName => LLMConfig.llamaModelName;
 
-  @override
-  String get modelName => 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo';
-
-  String get _apiKey =>
-      dotenv.env['TOGETHER_API_KEY'] ?? ''; // or 'GROQ_API_KEY'
+  String get _apiKey => dotenv.env[LLMConfig.llamaApiKeyEnv] ?? '';
 
   @override
   Future<LLMResponse> sendMessage(String userMessage) async {
     try {
       if (_apiKey.isEmpty) {
-        throw Exception(
-            'Together API key not found. Please add TOGETHER_API_KEY to your .env file.');
+        throw Exception(LLMConfig.llamaApiKeyError);
       }
 
       // Llama might not support tools the same way, so we might need to handle differently
@@ -40,12 +35,12 @@ class LlamaProvider extends BaseLLMProvider {
             'content': userMessage,
           },
         ],
-        'max_tokens': 1000,
-        'temperature': 0.7,
+        'max_tokens': LLMConfig.defaultMaxTokens,
+        'temperature': LLMConfig.defaultTemperature,
       };
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
+        Uri.parse('${LLMConfig.llamaBaseUrl}/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_apiKey',
@@ -64,8 +59,7 @@ class LlamaProvider extends BaseLLMProvider {
       return _parseLlamaResponse(message, userMessage);
     } catch (e) {
       return LLMResponse(
-        content:
-            'Sorry, I encountered an error while processing your request: ${e.toString()}',
+        content: '${LLMConfig.defaultErrorMessage}: ${e.toString()}',
       );
     }
   }
@@ -82,7 +76,7 @@ When a user asks you to create an email, respond ONLY with a JSON object in this
   "content": "Email body content"
 }
 
-If the request is NOT email-related, respond with: "Sorry, this task is not valid for me. I can only help with email-related tasks."
+If the request is NOT email-related, respond with: "${LLMConfig.emailTaskOnlyMessage}"
 
 Email-related requests include: send email, create email, compose email, write email, draft email, mail, send message, write to, contact, or any message containing an email address.
 ''';
@@ -114,7 +108,7 @@ Email-related requests include: send email, create email, compose email, write e
             );
 
             return LLMResponse(
-              content: "I'll help you create an email.",
+              content: LLMConfig.emailCreationMessage,
               toolCalls: [toolCall],
             );
           }

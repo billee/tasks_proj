@@ -3,25 +3,23 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../models/llm_models.dart';
+import '../../config/llm_config.dart';
 import 'base_llm_provider.dart';
 
 class OpenAIProvider extends BaseLLMProvider {
-  static const String _baseUrl = 'https://api.openai.com/v1';
+  @override
+  String get providerName => LLMConfig.openaiProviderName;
 
   @override
-  String get providerName => 'OpenAI';
+  String get modelName => LLMConfig.openaiModelName;
 
-  @override
-  String get modelName => 'gpt-4o-mini';
-
-  String get _apiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
+  String get _apiKey => dotenv.env[LLMConfig.openaiApiKeyEnv] ?? '';
 
   @override
   Future<LLMResponse> sendMessage(String userMessage) async {
     try {
       if (_apiKey.isEmpty) {
-        throw Exception(
-            'OpenAI API key not found. Please add OPENAI_API_KEY to your .env file.');
+        throw Exception(LLMConfig.openaiApiKeyError);
       }
 
       final requestBody = {
@@ -38,12 +36,12 @@ class OpenAIProvider extends BaseLLMProvider {
         ],
         'tools': getAvailableTools(),
         'tool_choice': 'auto',
-        'max_tokens': 1000,
-        'temperature': 0.7,
+        'max_tokens': LLMConfig.defaultMaxTokens,
+        'temperature': LLMConfig.defaultTemperature,
       };
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
+        Uri.parse('${LLMConfig.openaiBaseUrl}/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_apiKey',
@@ -62,8 +60,7 @@ class OpenAIProvider extends BaseLLMProvider {
       return _parseOpenAIResponse(message);
     } catch (e) {
       return LLMResponse(
-        content:
-            'Sorry, I encountered an error while processing your request: ${e.toString()}',
+        content: '${LLMConfig.defaultErrorMessage}: ${e.toString()}',
       );
     }
   }
@@ -78,13 +75,12 @@ class OpenAIProvider extends BaseLLMProvider {
           .toList();
 
       return LLMResponse(
-        content: message['content'] ?? "I'll help you create an email.",
+        content: message['content'] ?? LLMConfig.emailCreationMessage,
         toolCalls: toolCalls,
       );
     } else {
       return LLMResponse(
-        content: message['content'] ??
-            'Sorry, this task is not valid for me. I can only help with email-related tasks.',
+        content: message['content'] ?? LLMConfig.emailTaskOnlyMessage,
       );
     }
   }

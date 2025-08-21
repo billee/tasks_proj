@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flutter App Architecture</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            font-family: 'Segoe UI', Taurus, Geneva, Verdana, sans-serif;
+            color: white;
+            overflow-x: auto;
+        }
+        
+        .architecture-container {
+            min-width: 1400px;
+            height: 900px;
+            position: relative;
+            background: rgba(52, 73, 94, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .layer {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        
+        .ui-layer {
+            top: 20px;
+            left: 20px;
+            width: 480px;
+            height: 300px;
+        }
+        
+        .service-layer {
+            top: 20px;
+            right: 20px;
+            width: 380px;
+            height: 300px;
+        }
+        
+        .llm-provider-layer {
+            top: 350px;
+            left: 20px;
+            width: 600px;
+            height: 280px;
+            border-color: rgba(46, 204, 113, 0.5);
+            background: rgba(46, 204, 113, 0.1);
+        }
+        
+        .model-layer {
+            top: 350px;
+            right: 20px;
+            width: 320px;
+            height: 280px;
+        }
+        
+        .config-layer {
+            top: 660px;
+            left: 20px;
+            width: 280px;
+            height: 200px;
+        }
+        
+        .tool-service-layer {
+            top: 660px;
+            left: 320px;
+            width: 300px;
+            height: 200px;
+            border-color: rgba(155, 89, 182, 0.5);
+            background: rgba(155, 89, 182, 0.1);
+        }
+        
+        .layer-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 8px;
+        }
+        
+        .component {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 8px;
+            margin: 8px 0;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .component:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .new-component {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.2);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
+            to { box-shadow: 0 0 15px rgba(46, 204, 113, 0.8); }
+        }
+        
+        .base-provider {
+            background: rgba(52, 152, 219, 0.2);
+            border-color: #3498db;
+        }
+        
+        .provider-component {
+            background: rgba(230, 126, 34, 0.2);
+            border-color: #e67e22;
+        }
+        
+        .service-component {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: #e74c3c;
+        }
+        
+        .arrow {
+            position: absolute;
+            z-index: 10;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+        
+        .arrow-right {
+            width: 50px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        
+        .arrow-right::after {
+            right: -8px;
+            top: -4px;
+            border-left: 8px solid rgba(255, 255, 255, 0.6);
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+        
+        .arrow-down {
+            width: 2px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        
+        .arrow-down::after {
+            bottom: -8px;
+            left: -4px;
+            border-top: 8px solid rgba(255, 255, 255, 0.6);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+        }
+        
+        .flow-label {
+            position: absolute;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="architecture-container">
+        <!-- UI Layer -->
+        <div class="layer ui-layer">
+            <div class="layer-title">UI Layer (Widgets)</div>
+            <div class="component">tasks_chat_screen.dart<br><span style="font-size: 9px;">Main Screen</span></div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div class="component" style="flex: 1;">chat_input_widget.dart<br><span style="font-size: 9px;">Input Field</span></div>
+                <div class="component" style="flex: 1;">tasks_title_widget.dart<br><span style="font-size: 9px;">Title Header</span></div>
+            </div>
+            <div class="component">chat_response_widget.dart<br><span style="font-size: 9px;">Response Display</span></div>
+        </div>
+
+        <!-- Service Layer -->
+        <div class="layer service-layer">
+            <div class="layer-title">Service Layer (Business Logic)</div>
+            <div class="component new-component service-component">chat_service.dart<br><span style="font-size: 9px;">Orchestrates Chat Flow</span></div>
+            <div class="component new-component service-component">llm_service.dart<br><span style="font-size: 9px;">OpenAI GPT-4o-mini API</span></div>
+        </div>
+
+        <!-- LLM Provider Layer (New) -->
+        <div class="layer llm-provider-layer">
+            <div class="layer-title">LLM Provider Layer (Multi-Provider Support)</div>
+            <div class="component new-component base-provider">base_llm_provider.dart<br><span style="font-size: 9px;">Abstract Base Class</span></div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div class="component new-component provider-component">openai_provider.dart<br><span style="font-size: 9px;">OpenAI Implementation</span></div>
+                <div class="component new-component provider-component">deepseek_provider.dart<br><span style="font-size: 9px;">DeepSeek Implementation</span></div>
+                <div class="component new-component provider-component">llama_provider.dart<br><span style="font-size: 9px;">Llama Implementation</span></div>
+            </div>
+            <div style="margin-top: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 10px;">
+                <strong>Features:</strong><br>
+                • Tool calling (OpenAI, DeepSeek)<br>
+                • JSON parsing (Llama fallback)<br>
+                • Unified interface via BaseLLMProvider<br>
+                • Provider switching at runtime
+            </div>
+        </div>
+
+        <!-- Tool Service Layer -->
+        <div class="layer tool-service-layer">
+            <div class="layer-title">Tool Execution Layer</div>
+            <div class="component new-component">tool_service.dart<br><span style="font-size: 9px;">Email Tool Execution</span></div>
+            <div style="margin-top: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 10px;">
+                <strong>Tools:</strong><br>
+                • create_email function<br>
+                • Email validation<br>
+                • Result formatting
+            </div>
+        </div>
+
+        <!-- Model Layer -->
+        <div class="layer model-layer">
+            <div class="layer-title">Model Layer (Data)</div>
+            <div class="component">llm_models.dart<br><span style="font-size: 9px;">Data Structures</span></div>
+            <div style="margin-top: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 10px;">
+                <strong>Models:</strong><br>
+                • LLMResponse<br>
+                • ToolCall<br>
+                • EmailCreationResult
+            </div>
+        </div>
+
+        <!-- Configuration Layer -->
+        <div class="layer config-layer">
+            <div class="layer-title">Configuration</div>
+            <div class="component">main.dart<br><span style="font-size: 9px;">App Entry + dotenv init</span></div>
+            <div class="component">.env<br><span style="font-size: 9px;">API Keys</span></div>
+            <div class="component">pubspec.yaml<br><span style="font-size: 9px;">Dependencies</span></div>
+        </div>
+
+        <!-- Arrows and Flow -->
+        <div class="arrow arrow-right" style="top: 170px; left: 520px;"></div>
+        <div class="flow-label" style="top: 160px; left: 530px;">User Input</div>
+        
+        <div class="arrow arrow-right" style="top: 200px; right: 420px;"></div>
+        <div class="flow-label" style="top: 190px; right: 430px;">Response</div>
+        
+        <div class="arrow arrow-down" style="top: 340px; left: 750px;"></div>
+        <div class="flow-label" style="top: 350px; left: 760px;">Gets LLM Response</div>
+        
+        <div class="arrow arrow-down" style="top: 340px; left: 300px;"></div>
+        <div class="flow-label" style="top: 350px; left: 310px;">Calls Tools</div>
+        
+        <div class="arrow arrow-down" style="top: 650px; left: 170px;"></div>
+        <div class="flow-label" style="top: 665px; left: 180px;">Loads</div>
+        
+        <div class="arrow arrow-down" style="top: 650px; left: 700px;"></div>
+        <div class="flow-label" style="top: 665px; left: 710px;">Uses Models</div>
+
+        <!-- Provider Selection Flow -->
+        <div class="arrow arrow-right" style="top: 450px; left: 640px;"></div>
+        <div class="flow-label" style="top: 440px; left: 650px;">Uses Provider</div>
+
+        <!-- Tool Execution Flow -->
+        <div class="arrow arrow-right" style="top: 550px; left: 340px;"></div>
+        <div class="flow-label" style="top: 540px; left: 350px;">Executes</div>
+    </div>
+
+    <script>
+        // Add hover effects and information
+        document.querySelectorAll('.component').forEach(component => {
+            component.addEventListener('click', function() {
+                this.style.transform = this.style.transform === 'scale(1.05)' ? 'scale(1)' : 'scale(1.05)';
+            });
+        });
+
+        // Add provider switching animation
+        const providers = document.querySelectorAll('.provider-component');
+        let currentProvider = 0;
+        
+        setInterval(() => {
+            providers.forEach((p, i) => {
+                p.style.opacity = i === currentProvider ? '1' : '0.7';
+            });
+            currentProvider = (currentProvider + 1) % providers.length;
+        }, 3000);
+    </script>
+</body>
+</html>
