@@ -1,5 +1,4 @@
 // lib/services/chat_service.dart
-//import '../models/llm_models.dart';
 import 'llm_service.dart';
 
 class ChatService {
@@ -17,12 +16,11 @@ class ChatService {
           llmResponse.toolCalls!,
         );
 
-        // Step 4: Combine LLM response with tool results
-        return '''${llmResponse.content}
-
-$toolResults''';
+        // Step 4: Return the tool results (email creation result)
+        return toolResults;
       } else {
         // No tools needed, return LLM response directly
+        // This will be the "not valid task" message for non-email requests
         return llmResponse.content;
       }
     } catch (e) {

@@ -1,35 +1,39 @@
 name: tasks_proj
-description: A Flutter project with LLM chatbot integration.
-
+description: Flutter app with LLM integration
 publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.19.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # Core dependencies for the project
-  cupertino_icons: ^1.0.2
-  
-  # For HTTP requests (if connecting to real backend later)
+  # HTTP requests
   http: ^1.1.0
   
-  # For JSON serialization
+  # Environment variables
+  flutter_dotenv: ^5.1.0
+  
+  # UI
+  cupertino_icons: ^1.0.2
+
   json_annotation: ^4.8.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
-  flutter_lints: ^2.0.0
-  
+  flutter_lints: ^3.0.0
+
   # For JSON serialization
   build_runner: ^2.4.7
   json_serializable: ^6.7.1
 
 flutter:
-  uses-material-design: true
+    uses-material-design: true
+    
+    # Add .env file to assets
+    assets:
+      - .env
