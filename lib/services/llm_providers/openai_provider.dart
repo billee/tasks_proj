@@ -16,7 +16,8 @@ class OpenAIProvider extends BaseLLMProvider {
   String get _apiKey => dotenv.env[LLMConfig.openaiApiKeyEnv] ?? '';
 
   @override
-  Future<LLMResponse> sendMessage(String userMessage) async {
+  Future<LLMResponse> sendMessage(String userMessage,
+      {List<LLMTool>? tools}) async {
     try {
       if (_apiKey.isEmpty) {
         throw Exception(LLMConfig.openaiApiKeyError);
@@ -55,9 +56,10 @@ class OpenAIProvider extends BaseLLMProvider {
       }
 
       final responseData = json.decode(response.body);
-      final message = responseData['choices'][0]['message'];
+      final responseMessage =
+          responseData['choices'][0]['message']; // Renamed variable
 
-      return _parseOpenAIResponse(message);
+      return _parseOpenAIResponse(responseMessage);
     } catch (e) {
       return LLMResponse(
         content: '${LLMConfig.defaultErrorMessage}: ${e.toString()}',

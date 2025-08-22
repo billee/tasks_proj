@@ -16,7 +16,8 @@ class DeepSeekProvider extends BaseLLMProvider {
   String get _apiKey => dotenv.env[LLMConfig.deepseekApiKeyEnv] ?? '';
 
   @override
-  Future<LLMResponse> sendMessage(String userMessage) async {
+  Future<LLMResponse> sendMessage(String userMessage,
+      {List<LLMTool>? tools}) async {
     try {
       if (_apiKey.isEmpty) {
         throw Exception(LLMConfig.deepseekApiKeyError);
@@ -54,9 +55,10 @@ class DeepSeekProvider extends BaseLLMProvider {
       }
 
       final responseData = json.decode(response.body);
-      final message = responseData['choices'][0]['message'];
+      final responseMessage =
+          responseData['choices'][0]['message']; // Renamed variable
 
-      return _parseDeepSeekResponse(message);
+      return _parseDeepSeekResponse(responseMessage);
     } catch (e) {
       return LLMResponse(
         content: '${LLMConfig.defaultErrorMessage}: ${e.toString()}',

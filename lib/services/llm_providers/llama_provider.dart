@@ -16,7 +16,8 @@ class LlamaProvider extends BaseLLMProvider {
   String get _apiKey => dotenv.env[LLMConfig.llamaApiKeyEnv] ?? '';
 
   @override
-  Future<LLMResponse> sendMessage(String userMessage) async {
+  Future<LLMResponse> sendMessage(String userMessage,
+      {List<LLMTool>? tools}) async {
     try {
       if (_apiKey.isEmpty) {
         throw Exception(LLMConfig.llamaApiKeyError);
@@ -54,9 +55,10 @@ class LlamaProvider extends BaseLLMProvider {
       }
 
       final responseData = json.decode(response.body);
-      final message = responseData['choices'][0]['message'];
+      final responseMessage =
+          responseData['choices'][0]['message']; // Renamed variable
 
-      return _parseLlamaResponse(message, userMessage);
+      return _parseLlamaResponse(responseMessage, userMessage);
     } catch (e) {
       return LLMResponse(
         content: '${LLMConfig.defaultErrorMessage}: ${e.toString()}',
@@ -83,7 +85,7 @@ Email-related requests include: send email, create email, compose email, write e
   }
 
   LLMResponse _parseLlamaResponse(
-      Map<String, dynamic> message, String userMessage) {
+      Map<String, dynamic> message, String originalMessage) {
     final content = message['content'] ?? '';
 
     // Try to parse JSON response for tool calls

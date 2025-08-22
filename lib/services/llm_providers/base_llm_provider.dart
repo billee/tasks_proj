@@ -2,7 +2,7 @@
 import '../../models/llm_models.dart';
 
 abstract class BaseLLMProvider {
-  Future<LLMResponse> sendMessage(String userMessage);
+  Future<LLMResponse> sendMessage(String message, {List<LLMTool>? tools});
   String get providerName;
   String get modelName;
 

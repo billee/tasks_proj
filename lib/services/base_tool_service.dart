@@ -1,6 +1,16 @@
 // lib/services/base_tool_service.dart
 import '../models/llm_models.dart';
 
+/// Abstract base class for all tool results
+abstract class ToolResult {
+  final bool success;
+  final String message;
+
+  ToolResult({required this.success, required this.message});
+
+  Map<String, dynamic> toJson();
+}
+
 /// Abstract base class for all tool services
 /// Provides common interface and shared functionality
 abstract class BaseToolService {

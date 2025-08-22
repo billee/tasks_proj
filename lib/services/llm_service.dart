@@ -5,6 +5,7 @@ import 'llm_providers/openai_provider.dart';
 import 'llm_providers/deepseek_provider.dart';
 import 'llm_providers/llama_provider.dart';
 import 'tool_service.dart';
+import 'email/models/email_models.dart';
 
 enum LLMProviderType {
   openai,
@@ -36,7 +37,8 @@ class LLMService {
 
   BaseLLMProvider get currentProvider => _currentProvider;
 
-  Future<LLMResponse> sendMessage(String userMessage) async {
+  Future<LLMResponse> sendMessage(String userMessage,
+      {List<LLMTool>? tools}) async {
     return await _currentProvider.sendMessage(userMessage);
   }
 
@@ -88,9 +90,6 @@ ${result.message}
     setProvider(newProvider);
   }
 }
-
-
-
 
 // Example usage in your main app:
 // 

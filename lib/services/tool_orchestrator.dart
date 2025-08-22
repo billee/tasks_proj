@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'base_tool_service.dart';
 import 'tool_registry.dart';
-import '../models/llm_models.dart';
+import '../models/llm_models.dart' as models;
 
 /// Central orchestrator for coordinating tool execution across services
 class ToolOrchestrator {
@@ -23,7 +23,7 @@ class ToolOrchestrator {
   }
 
   /// Execute a single tool call
-  Future<ToolResult> executeToolCall(ToolCall toolCall) async {
+  Future<ToolResult> executeToolCall(models.ToolCall toolCall) async {
     await _ensureInitialized();
 
     try {
@@ -67,13 +67,14 @@ class ToolOrchestrator {
   }
 
   /// Execute multiple tool calls concurrently
-  Future<List<ToolResult>> executeToolCalls(List<ToolCall> toolCalls) async {
+  Future<List<ToolResult>> executeToolCalls(
+      List<models.ToolCall> toolCalls) async {
     await _ensureInitialized();
 
     if (toolCalls.isEmpty) return [];
 
     // Group tool calls by service for potential optimization
-    final serviceGroups = <String, List<ToolCall>>{};
+    final serviceGroups = <String, List<models.ToolCall>>{};
     for (final toolCall in toolCalls) {
       final service = _registry.getServiceForTool(toolCall.toolName);
       if (service != null) {
@@ -88,7 +89,7 @@ class ToolOrchestrator {
 
   /// Execute tool calls sequentially (for dependent operations)
   Future<List<ToolResult>> executeToolCallsSequentially(
-      List<ToolCall> toolCalls) async {
+      List<models.ToolCall> toolCalls) async {
     await _ensureInitialized();
 
     final results = <ToolResult>[];
@@ -106,7 +107,7 @@ class ToolOrchestrator {
 
   /// Process an LLM response with tool calls
   Future<LLMToolExecutionResult> processLLMResponse(
-      LLMResponse response) async {
+      models.LLMResponse response) async {
     if (!response.hasToolCalls) {
       return LLMToolExecutionResult(
         originalResponse: response,
@@ -140,22 +141,22 @@ class ToolOrchestrator {
   }
 
   /// Get all available tools for LLM requests
-  List<LLMTool> getAvailableTools() {
+  List<models.LLMTool> getAvailableTools() {
     return _registry.getAllTools();
   }
 
   /// Get tools filtered by service or category
-  List<LLMTool> getToolsByCategory(String category) {
+  List<models.LLMTool> getToolsByCategory(String category) {
     return _registry.getToolsByCategory(category);
   }
 
   /// Search for tools
-  List<ToolSearchResult> searchTools(String query) {
+  List<models.ToolSearchResult> searchTools(String query) {
     return _registry.searchTools(query);
   }
 
   /// Get service information
-  List<ServiceInfo> getServicesInfo() {
+  List<models.ServiceInfo> getServicesInfo() {
     return _registry.getServicesInfo();
   }
 
@@ -206,7 +207,7 @@ class ToolOrchestrator {
 
 /// Result of executing tools from an LLM response
 class LLMToolExecutionResult {
-  final LLMResponse originalResponse;
+  final models.LLMResponse originalResponse;
   final List<ToolResult> toolResults;
   final bool success;
   final String message;
@@ -263,58 +264,13 @@ class LLMToolExecutionResult {
 /// Interceptor for tool execution events
 abstract class ToolExecutionInterceptor {
   /// Called before tool execution, can return a result to skip execution
-  Future<ToolResult?> beforeExecution(ToolCall toolCall);
+  Future<ToolResult?> beforeExecution(models.ToolCall toolCall);
 
   /// Called after successful tool execution
-  Future<void> afterExecution(ToolCall toolCall, ToolResult result);
+  Future<void> afterExecution(models.ToolCall toolCall, ToolResult result);
 
   /// Called when tool execution fails
-  Future<void> onError(ToolCall toolCall, dynamic error);
-}
-
-/// Information about a service
-class ServiceInfo {
-  final String serviceId;
-  final String serviceName;
-  final int toolCount;
-  final bool isEnabled;
-
-  ServiceInfo({
-    required this.serviceId,
-    required this.serviceName,
-    required this.toolCount,
-    required this.isEnabled,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'service_id': serviceId,
-      'service_name': serviceName,
-      'tool_count': toolCount,
-      'is_enabled': isEnabled,
-    };
-  }
-}
-
-/// Search result for tools
-class ToolSearchResult {
-  final LLMTool tool;
-  final String serviceId;
-  final String serviceName;
-
-  ToolSearchResult({
-    required this.tool,
-    required this.serviceId,
-    required this.serviceName,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'tool': tool.toJson(),
-      'service_id': serviceId,
-      'service_name': serviceName,
-    };
-  }
+  Future<void> onError(models.ToolCall toolCall, dynamic error);
 }
 
 /// Statistics about the orchestrator

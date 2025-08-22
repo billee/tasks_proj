@@ -1,7 +1,7 @@
 // lib/services/todo_tool_service.dart
-import 'dart:math';
-import 'base_tool_service.dart';
-import '../models/llm_models.dart';
+import '../base_tool_service.dart';
+import '../../models/llm_models.dart';
+import 'models/todo_models.dart'; // Import from the new location
 
 class TodoToolService extends BaseToolService {
   static const String _serviceId = 'todo';
