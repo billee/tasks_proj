@@ -4,7 +4,7 @@ import 'llm_providers/base_llm_provider.dart';
 import 'llm_providers/openai_provider.dart';
 import 'llm_providers/deepseek_provider.dart';
 import 'llm_providers/llama_provider.dart';
-import 'tool_service.dart';
+import 'zzzzztool_service.dart';
 import 'email/models/email_models.dart';
 
 enum LLMProviderType {
