@@ -25,7 +25,30 @@ class EmailToolService extends BaseToolService {
   List<LLMTool> get availableTools => [
         LLMTool(
           name: 'create_email',
-          description: 'Create and send an email to a recipient',
+          description:
+              'Drafts an email with specified recipient, subject, and content for user approval.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'recipient': {
+                'type': 'string',
+                'description': 'Email address of the recipient',
+              },
+              'subject': {
+                'type': 'string',
+                'description': 'Subject line of the email',
+              },
+              'content': {
+                'type': 'string',
+                'description': 'Body content of the email',
+              },
+            },
+            'required': ['recipient', 'subject', 'content'],
+          },
+        ),
+        LLMTool(
+          name: 'send_email',
+          description: 'Sends a previously drafted email.',
           parameters: {
             'type': 'object',
             'properties': {
@@ -92,16 +115,17 @@ class EmailToolService extends BaseToolService {
     try {
       final validatedArgs =
           validateParameters(toolCall.toolName, toolCall.arguments);
-
       switch (toolCall.toolName) {
         case 'create_email':
-          return await _createEmail(validatedArgs);
+          return _createEmailDraft(validatedArgs);
+        case 'send_email':
+          return await _sendEmail(validatedArgs);
         case 'get_email_status':
           return await _getEmailStatus(validatedArgs);
         case 'get_email_history':
           return await _getEmailHistory(validatedArgs);
         default:
-          throw ToolExecutionException('Unknown tool: ${toolCall.toolName}');
+          return createErrorResult('Unknown tool: ${toolCall.toolName}');
       }
     } on ToolValidationException catch (e) {
       return createErrorResult(e.message);
@@ -112,19 +136,35 @@ class EmailToolService extends BaseToolService {
     }
   }
 
-  Future<EmailCreationResult> _createEmail(
-      Map<String, dynamic> arguments) async {
+  Future<ToolResult> _createEmailDraft(Map<String, dynamic> arguments) async {
+    // This tool no longer sends the email, it just confirms the draft is ready
+    return createSuccessResult(
+      'Email draft prepared. Recipient: ${arguments['recipient']}, Subject: ${arguments['subject']}',
+      arguments,
+    );
+  }
+
+  Future<ToolResult> _sendEmail(Map<String, dynamic> arguments) async {
     final recipient = arguments['recipient'] as String;
     final subject = arguments['subject'] as String;
     final content = arguments['content'] as String;
     final priority = arguments['priority'] as String? ?? 'normal';
 
-    return await _emailService.createEmail(
+    final result = await _emailService.createEmail(
       recipient: recipient,
       subject: subject,
       content: content,
       priority: priority,
     );
+
+    if (result.success) {
+      return createSuccessResult(
+        result.message,
+        result.toJson(),
+      );
+    } else {
+      return createErrorResult(result.message);
+    }
   }
 
   Future<ToolResult> _getEmailStatus(Map<String, dynamic> arguments) async {
@@ -144,7 +184,7 @@ class EmailToolService extends BaseToolService {
     // This would be implemented in the EmailService if needed
     // For now, return a placeholder response
     return createSuccessResult(
-      'Email history feature not fully implemented yet',
+      'Email history retrieval is not yet implemented.',
       {'limit': limit, 'status_filter': statusFilter},
     );
   }

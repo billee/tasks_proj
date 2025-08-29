@@ -1,11 +1,15 @@
 // lib/services/chat_service.dart
 import 'llm_service.dart';
 import 'tool_orchestrator.dart';
-import 'base_tool_service.dart'; // Add this import
+import 'base_tool_service.dart';
+import '../models/llm_models.dart';
 
 class ChatService {
   final LLMService _llmService = LLMService(provider: LLMProviderType.openai);
   final ToolOrchestrator _toolOrchestrator = ToolOrchestrator();
+
+  // Store the pending email tool call for approval
+  ToolCall? _pendingEmailToolCall;
 
   ChatService() {
     _llmService.setProvider(LLMProviderType.openai);
@@ -18,13 +22,27 @@ class ChatService {
       final llmResponse = await _llmService.sendMessage(userMessage);
 
       if (llmResponse.hasToolCalls) {
-        final executionResult =
-            await _toolOrchestrator.processLLMResponse(llmResponse);
+        final toolCall = llmResponse.toolCalls!.first;
 
-        if (executionResult.success) {
-          return _formatToolResults(executionResult.toolResults);
+        // Check if the LLM wants to create an email
+        if (toolCall.toolName == 'create_email') {
+          // Store the tool call and format a message for user approval
+          _pendingEmailToolCall = toolCall;
+          final arguments = toolCall.arguments;
+          return _formatEmailForApproval(
+            arguments['recipient'],
+            arguments['subject'],
+            arguments['content'],
+          );
         } else {
-          return 'Failed to execute tools: ${executionResult.message}';
+          // Process other tool calls normally
+          final executionResult =
+              await _toolOrchestrator.processLLMResponse(llmResponse);
+          if (executionResult.success) {
+            return _formatToolResults(executionResult.toolResults);
+          } else {
+            return 'Failed to execute tools: ${executionResult.message}';
+          }
         }
       } else {
         return llmResponse.content;
@@ -34,13 +52,46 @@ class ChatService {
     }
   }
 
-  String _formatToolResults(List<ToolResult> results) {
-    return results.map((result) {
-      return result.success ? '✓ ${result.message}' : '✗ ${result.message}';
-    }).join('\n\n');
+  /// Sends the previously approved email.
+  Future<String> sendApprovedEmail() async {
+    if (_pendingEmailToolCall == null) {
+      return 'No email draft to send.';
+    }
+
+    // Create a new tool call for sending the email using the stored arguments
+    final sendEmailToolCall = ToolCall(
+      toolName: 'send_email',
+      arguments: _pendingEmailToolCall!.arguments,
+    );
+    _pendingEmailToolCall = null; // Clear the pending state
+
+    try {
+      final result = await _toolOrchestrator.executeToolCall(sendEmailToolCall);
+      if (result.success) {
+        return 'Email sent successfully!';
+      } else {
+        return 'Failed to send email: ${result.message}';
+      }
+    } catch (e) {
+      return 'An error occurred while sending the email: ${e.toString()}';
+    }
   }
 
-  String getCurrentModelInfo() {
-    return 'Using ${_llmService.currentProvider.providerName} - ${_llmService.currentProvider.modelName}';
+  String _formatEmailForApproval(
+      String recipient, String subject, String content) {
+    return 'I have drafted the following email for you. Would you like to send it?\n\n'
+        '**To:** $recipient\n'
+        '**Subject:** $subject\n'
+        '**Content:**\n$content';
+  }
+
+  String _formatToolResults(List<ToolResult> results) {
+    return results.map((result) {
+      if (result.success) {
+        return '✅ ${result.message}';
+      } else {
+        return '❌ ${result.message}';
+      }
+    }).join('\n');
   }
 }
