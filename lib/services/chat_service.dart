@@ -77,6 +77,20 @@ class ChatService {
     }
   }
 
+  /// Cancels the current email draft.
+  void cancelEmailDraft() {
+    _pendingEmailToolCall = null;
+  }
+
+  /// Retrieves the content of the pending email for editing.
+  String getPendingEmailContent() {
+    if (_pendingEmailToolCall != null) {
+      final args = _pendingEmailToolCall!.arguments;
+      return 'To: ${args['recipient']}\nSubject: ${args['subject']}\n\n${args['content']}';
+    }
+    return '';
+  }
+
   String _formatEmailForApproval(
       String recipient, String subject, String content) {
     return 'I have drafted the following email for you. Would you like to send it?\n\n'

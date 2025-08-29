@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class ChatInputWidget extends StatefulWidget {
   final TextEditingController controller;
   final Function(String) onSendMessage;
+  final bool isLoading;
 
   const ChatInputWidget({
     Key? key,
     required this.controller,
     required this.onSendMessage,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -17,6 +19,7 @@ class ChatInputWidget extends StatefulWidget {
 
 class _ChatInputWidgetState extends State<ChatInputWidget> {
   void _sendMessage() {
+    if (widget.isLoading) return; // Prevent sending if loading
     final message = widget.controller.text.trim();
     if (message.isNotEmpty) {
       // Hide keyboard immediately
@@ -42,6 +45,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
           Expanded(
             child: TextField(
               controller: widget.controller,
+              enabled: !widget.isLoading, // Disable when loading
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'What task do you want me to do?',
@@ -69,7 +73,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
               width: 48.0,
               height: 48.0,
               decoration: BoxDecoration(
-                color: Colors.blue[600],
+                color: widget.isLoading ? Colors.grey[700] : Colors.blue[600],
                 borderRadius: BorderRadius.circular(24.0),
               ),
               child: const Icon(

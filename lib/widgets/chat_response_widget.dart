@@ -4,11 +4,19 @@ import 'package:flutter/material.dart';
 class ChatResponseWidget extends StatelessWidget {
   final String response;
   final bool isLoading;
+  final bool isEmailApprovalPending;
+  final VoidCallback? onApprove;
+  final VoidCallback? onEdit;
+  final VoidCallback? onCancel;
 
   const ChatResponseWidget({
     Key? key,
     required this.response,
     required this.isLoading,
+    this.isEmailApprovalPending = false,
+    this.onApprove,
+    this.onEdit,
+    this.onCancel,
   }) : super(key: key);
 
   @override
@@ -27,6 +35,7 @@ class ChatResponseWidget extends StatelessWidget {
               _buildEmptyState()
             else
               _buildResponseContent(),
+            if (isEmailApprovalPending) _buildApprovalButtons(),
           ],
         ),
       ),
@@ -91,6 +100,38 @@ class ChatResponseWidget extends StatelessWidget {
         ),
         textAlign: TextAlign.left,
       ),
+    );
+  }
+
+  Widget _buildApprovalButtons() {
+    // Wrap the Row with a SingleChildScrollView to prevent overflow
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildButton('Approve', Colors.green, onApprove),
+          const SizedBox(width: 12.0),
+          _buildButton('Edit', Colors.blue, onEdit),
+          const SizedBox(width: 12.0),
+          _buildButton('Cancel', Colors.red, onCancel),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButton(String text, Color color, VoidCallback? onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+      ),
+      child: Text(text),
     );
   }
 }
