@@ -16,8 +16,11 @@ class LlamaProvider extends BaseLLMProvider {
   String get _apiKey => dotenv.env[LLMConfig.llamaApiKeyEnv] ?? '';
 
   @override
-  Future<LLMResponse> sendMessage(String userMessage,
-      {List<LLMTool>? tools}) async {
+  Future<LLMResponse> sendMessage(
+    String userMessage, {
+    List<Map<String, dynamic>> conversationHistory = const [],
+    List<LLMTool> tools = const [],
+  }) async {
     try {
       if (_apiKey.isEmpty) {
         throw Exception(LLMConfig.llamaApiKeyError);

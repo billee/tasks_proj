@@ -1,11 +1,11 @@
-// lib/services/llm_service.dart (Updated)
+// lib/services/llm_service.dart
 import '../models/llm_models.dart';
 import 'llm_providers/base_llm_provider.dart';
 import 'llm_providers/openai_provider.dart';
 import 'llm_providers/deepseek_provider.dart';
 import 'llm_providers/llama_provider.dart';
-import 'zzzzztool_service.dart';
-import 'email/models/email_models.dart';
+import 'tool_orchestrator.dart';
+import 'base_tool_service.dart';
 
 enum LLMProviderType {
   openai,
@@ -14,14 +14,19 @@ enum LLMProviderType {
 }
 
 class LLMService {
-  final ToolService _toolService = ToolService();
+  final ToolOrchestrator _toolOrchestrator = ToolOrchestrator();
   late BaseLLMProvider _currentProvider;
+  List<Map<String, dynamic>> _conversationHistory = [];
 
   LLMService({LLMProviderType provider = LLMProviderType.openai}) {
     setProvider(provider);
+    _toolOrchestrator.initialize();
+    print(
+        '==================LLMService initialized with provider: ${provider.name}');
   }
 
   void setProvider(LLMProviderType provider) {
+    print('==================Switching LLM provider to: ${provider.name}');
     switch (provider) {
       case LLMProviderType.openai:
         _currentProvider = OpenAIProvider();
@@ -37,48 +42,101 @@ class LLMService {
 
   BaseLLMProvider get currentProvider => _currentProvider;
 
-  Future<LLMResponse> sendMessage(String userMessage,
-      {List<LLMTool>? tools}) async {
-    return await _currentProvider.sendMessage(userMessage);
+  Future<LLMResponse> sendMessage(String userMessage) async {
+    print('======================= LLMService.sendMessage called ===');
+    print('User message: $userMessage');
+    print(
+        'Current conversation history length: ${_conversationHistory.length}');
+
+    // Add user message to conversation history
+    _conversationHistory.add({'role': 'user', 'content': userMessage});
+    print('=====================Added user message to history');
+
+    // Get available tools for the LLM
+    final tools = _toolOrchestrator.getAvailableTools();
+    print(
+        '======================Available tools: ${tools.map((t) => t.name).toList()}');
+
+    // Send message with conversation history and tools
+    print('======================Sending to LLM provider...');
+    final response = await _currentProvider.sendMessage(
+      userMessage,
+      conversationHistory: _conversationHistory,
+      tools: tools,
+    );
+
+    print('==================LLM response: ${response.content}');
+    if (response.toolCalls != null) {
+      print(
+          '=================Tool calls: ${response.toolCalls!.map((tc) => tc.toolName).toList()}');
+    }
+
+    // Add assistant response to conversation history
+    _conversationHistory
+        .add({'role': 'assistant', 'content': response.content});
+    if (response.toolCalls != null) {
+      _conversationHistory.last['tool_calls'] = response.toolCalls;
+    }
+
+    print('=======================Added assistant response to history');
+    print(
+        '=======================New conversation history length: ${_conversationHistory.length}');
+
+    return response;
   }
 
   Future<String> executeToolCalls(List<ToolCall> toolCalls) async {
-    final results = <String>[];
+    print(
+        '============================= LLMService.executeToolCalls called ===');
+    print('=============================Tool calls: $toolCalls');
 
-    for (final toolCall in toolCalls) {
-      switch (toolCall.toolName) {
-        case 'create_email':
-          final result = await _toolService.createEmail(toolCall.arguments);
-          results.add(_formatEmailCreationResult(result));
-          break;
-        default:
-          results.add("Unknown tool: ${toolCall.toolName}");
-      }
+    final results = await _toolOrchestrator.executeToolCalls(toolCalls);
+
+    print('==========================Tool execution results: $results');
+
+    final formattedResults = <String>[];
+    for (int i = 0; i < toolCalls.length; i++) {
+      final toolCall = toolCalls[i];
+      final result = results[i];
+
+      formattedResults.add(_formatToolResult(toolCall, result));
     }
 
-    return results.join('\n\n');
+    // Add tool results to conversation history
+    _conversationHistory.add({
+      'role': 'tool',
+      'content': formattedResults.join('\n\n'),
+      'toolResults': results.map((r) => r.toJson()).toList(),
+    });
+
+    print(
+        '=========================Added tool results to conversation history');
+    return formattedResults.join('\n\n');
   }
 
-  String _formatEmailCreationResult(EmailCreationResult result) {
+  String _formatToolResult(ToolCall toolCall, ToolResult result) {
     if (result.success) {
       return '''
-📧 Email Created Successfully!
-
-**Email ID:** ${result.emailId}
-**Recipient:** ${result.recipient}
-**Subject:** ${result.subject}
-**Content:** ${result.content}
-
+✅ ${toolCall.toolName} executed successfully
 ${result.message}
+${result.toJson().containsKey('data') ? 'Data: ${result.toJson()['data']}' : ''}
 ''';
     } else {
       return '''
-❌ Failed to Create Email
-
-**Error:** ${result.message}
+❌ ${toolCall.toolName} failed
+Error: ${result.message}
 ''';
     }
   }
+
+  // Clear conversation history
+  void clearHistory() {
+    print('==========================Clearing conversation history');
+    _conversationHistory.clear();
+  }
+
+  // Get conversation history
+  List<Map<String, dynamic>> get conversationHistory => _conversationHistory;
 
   // Method to get available providers
   static List<String> getAvailableProviders() {
@@ -90,30 +148,3 @@ ${result.message}
     setProvider(newProvider);
   }
 }
-
-// Example usage in your main app:
-// 
-// class EmailChatScreen extends StatefulWidget {
-//   @override
-//   _EmailChatScreenState createState() => _EmailChatScreenState();
-// }
-//
-// class _EmailChatScreenState extends State<EmailChatScreen> {
-//   late LLMService _llmService;
-//   LLMProviderType _currentProvider = LLMProviderType.openai;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _llmService = LLMService(provider: _currentProvider);
-//   }
-//
-//   void _switchProvider(LLMProviderType newProvider) {
-//     setState(() {
-//       _currentProvider = newProvider;
-//       _llmService.setProvider(newProvider);
-//     });
-//   }
-//
-//   // Your existing chat logic...
-// }

@@ -16,30 +16,65 @@ class OpenAIProvider extends BaseLLMProvider {
   String get _apiKey => dotenv.env[LLMConfig.openaiApiKeyEnv] ?? '';
 
   @override
-  Future<LLMResponse> sendMessage(String userMessage,
-      {List<LLMTool>? tools}) async {
+  Future<LLMResponse> sendMessage(
+    String userMessage, {
+    List<Map<String, dynamic>> conversationHistory = const [],
+    List<LLMTool> tools = const [],
+  }) async {
     try {
       if (_apiKey.isEmpty) {
         throw Exception(LLMConfig.openaiApiKeyError);
       }
 
+      // Prepare messages for the API
+      final messages = <Map<String, dynamic>>[];
+
+      // Add system prompt (using inherited method from base class)
+      messages.add({
+        'role': 'system',
+        'content': getSystemPrompt(),
+      });
+
+      // Add conversation history
+      for (var msg in conversationHistory) {
+        // Skip tool messages as OpenAI doesn't support them directly
+        if (msg['role'] == 'tool') continue;
+
+        messages.add({
+          'role': msg['role'],
+          'content': msg['content'],
+        });
+      }
+
+      // Add the current user message
+      messages.add({
+        'role': 'user',
+        'content': userMessage,
+      });
+
+      // Prepare tools for the API
+      final openAITools = tools.map((tool) {
+        return {
+          'type': 'function',
+          'function': {
+            'name': tool.name,
+            'description': tool.description,
+            'parameters': tool.parameters,
+          }
+        };
+      }).toList();
+
       final requestBody = {
         'model': modelName,
-        'messages': [
-          {
-            'role': 'system',
-            'content': getSystemPrompt(),
-          },
-          {
-            'role': 'user',
-            'content': userMessage,
-          },
-        ],
-        'tools': getAvailableTools(),
-        'tool_choice': 'auto',
+        'messages': messages,
+        'tools': openAITools.isNotEmpty ? openAITools : null,
+        'tool_choice': openAITools.isNotEmpty ? 'auto' : null,
         'max_tokens': LLMConfig.defaultMaxTokens,
         'temperature': LLMConfig.defaultTemperature,
       };
+
+      print(
+          '==============================Sending to OpenAI: ${jsonEncode(requestBody)}');
 
       final response = await http.post(
         Uri.parse('${LLMConfig.openaiBaseUrl}/chat/completions'),
@@ -50,17 +85,20 @@ class OpenAIProvider extends BaseLLMProvider {
         body: json.encode(requestBody),
       );
 
+      print(
+          '========================OpenAI response: ${response.statusCode} - ${response.body}');
+
       if (response.statusCode != 200) {
         throw Exception(
             'OpenAI API error: ${response.statusCode} - ${response.body}');
       }
 
       final responseData = json.decode(response.body);
-      final responseMessage =
-          responseData['choices'][0]['message']; // Renamed variable
+      final message = responseData['choices'][0]['message'];
 
-      return _parseOpenAIResponse(responseMessage);
+      return _parseOpenAIResponse(message);
     } catch (e) {
+      print('=================================OpenAI API exception: $e');
       return LLMResponse(
         content: '${LLMConfig.defaultErrorMessage}: ${e.toString()}',
       );

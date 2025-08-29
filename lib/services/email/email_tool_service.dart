@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../base_tool_service.dart';
 import '../../models/llm_models.dart';
 import 'models/email_models.dart';
-import 'zzzzzemail_service.dart';
+import 'email_service.dart';
 import 'data_sources/local_email_data_source.dart';
 
 class EmailToolService extends BaseToolService {

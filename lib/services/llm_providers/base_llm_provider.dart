@@ -2,7 +2,11 @@
 import '../../models/llm_models.dart';
 
 abstract class BaseLLMProvider {
-  Future<LLMResponse> sendMessage(String message, {List<LLMTool>? tools});
+  Future<LLMResponse> sendMessage(
+    String userMessage, {
+    List<Map<String, dynamic>> conversationHistory = const [],
+    List<LLMTool> tools = const [],
+  });
   String get providerName;
   String get modelName;
 
@@ -16,7 +20,7 @@ IMPORTANT GUIDELINES:
 2. If a user's message is NOT email-related, respond with: "Sorry, this task is not valid for me. I can only help with email-related tasks."
 3. Email-related keywords include: email, send email, create email, compose email, write email, draft email, mail, send message, write to, contact.
 4. When using the create_email tool, extract the recipient, subject, and content from the user's message intelligently.
-5. If the user doesn't provide all email details, make reasonable assumptions or ask for clarification.
+5. If the user doesn't provide all email details, ask for clarification.
 ''';
   }
 

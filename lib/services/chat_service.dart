@@ -15,8 +15,7 @@ class ChatService {
   Future<String> processUserMessage(String userMessage) async {
     try {
       final availableTools = _toolOrchestrator.getAvailableTools();
-      final llmResponse =
-          await _llmService.sendMessage(userMessage, tools: availableTools);
+      final llmResponse = await _llmService.sendMessage(userMessage);
 
       if (llmResponse.hasToolCalls) {
         final executionResult =
