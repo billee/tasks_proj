@@ -22,7 +22,6 @@ class ChatResponseWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if the response contains an email draft
     final isEmailDraft =
         response.contains('I have drafted the following email for you.');
 
@@ -100,7 +99,6 @@ class ChatResponseWidget extends StatelessWidget {
   }
 }
 
-/// A private widget to display a visually pleasing email draft.
 class _EmailDraftWidget extends StatelessWidget {
   final String draft;
 
@@ -108,30 +106,17 @@ class _EmailDraftWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Simple parsing logic
-    final parts = draft.split('\n\n');
-    final recipientLine = parts[1].substring(5).trim();
-    final subjectLine = parts[2].substring(9).trim();
-    String content = parts.skip(3).join('\n\n').trim();
-
-    // Remove "Subject:" from the content if it's there
-    content = content.replaceFirst(RegExp(r'^Subject:\s*'), '').trim();
-
-    // Replace [Your Name] with twilly
-    content = content.replaceAll('[Your Name]', 'twilly');
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900], // Dark background for the email container
+          color: Colors.grey[900],
           borderRadius: BorderRadius.circular(16.0),
         ),
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header for "New Draft"
             const Center(
               child: Text(
                 'Email Draft',
@@ -143,52 +128,33 @@ class _EmailDraftWidget extends StatelessWidget {
               ),
             ),
             const Divider(color: Colors.white38, height: 24),
-
-            // Recipient and Subject
-            _buildInfoRow('To:', recipientLine),
-            _buildInfoRow('Subject:', subjectLine),
-            const Divider(color: Colors.white38, height: 24),
-
-            // Email Body
-            Text(
-              content,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16.0,
-                height: 1.5,
+            MarkdownBody(
+              data: draft,
+              styleSheet: MarkdownStyleSheet.fromTheme(
+                ThemeData(
+                  textTheme: const TextTheme(
+                    bodyMedium: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16.0,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ).copyWith(
+                p: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16.0,
+                  height: 1.5,
+                ),
+                strong: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16.0,
+                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14.0,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14.0,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
