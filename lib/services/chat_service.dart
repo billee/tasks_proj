@@ -75,14 +75,7 @@ class ChatService {
           '$content';
     }
 
-    // Handle approve action or edit with provided content
-    if (action == 'approve' || editedContent != null) {
-      if (editedContent != null) {
-        content = editedContent;
-        // Update the pending tool call with new content
-        _pendingEmailToolCall!.arguments['content'] = content;
-      }
-
+    if (action == 'approve') {
       try {
         // Convert newlines to HTML <br> tags for correct formatting in email clients
         String htmlContent = content.replaceAll('\n', '<br>');
@@ -109,6 +102,23 @@ class ChatService {
     }
 
     return 'Invalid action specified.';
+  }
+
+  // New method to update draft content without sending
+  String updateEmailDraft(String editedContent) {
+    if (_pendingEmailToolCall == null) {
+      return 'No email draft is currently pending.';
+    }
+
+    // Update the pending tool call with new content
+    _pendingEmailToolCall!.arguments['content'] = editedContent;
+
+    final arguments = _pendingEmailToolCall!.arguments;
+    final recipient = arguments['recipient'] as String;
+    final subject = arguments['subject'] as String;
+
+    // Return the updated draft for approval
+    return _formatEmailForApproval(recipient, subject, editedContent);
   }
 
   /// Cancels the current email draft.

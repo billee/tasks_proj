@@ -93,14 +93,15 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
     });
 
     try {
-      final response = await _chatService.handleEmailApproval('approve',
-          editedContent: editedContent);
+      // Update the draft instead of sending the email
+      final response = _chatService.updateEmailDraft(editedContent);
 
       if (mounted) {
         setState(() {
           _llmResponse = response;
           _isLoading = false;
-          _isEmailApprovalPending = false; // Hide buttons after sending
+          _isEmailApprovalPending =
+              true; // Keep approval pending so user can approve/cancel
         });
       }
     } catch (e) {
