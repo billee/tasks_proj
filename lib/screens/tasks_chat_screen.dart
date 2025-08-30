@@ -17,7 +17,7 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
   final ChatService _chatService = ChatService();
   String _llmResponse = '';
   bool _isLoading = false;
-  bool _isEmailApprovalPending = false; // New state variable
+  bool _isEmailApprovalPending = false;
 
   @override
   void dispose() {
@@ -71,7 +71,36 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
         setState(() {
           _llmResponse = response;
           _isLoading = false;
-          _isEmailApprovalPending = false; // Hide buttons after action
+          // Keep approval pending if we're in edit mode (response contains edit instructions)
+          _isEmailApprovalPending =
+              response.contains('Please provide your edits');
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _llmResponse = 'Sorry, something went wrong. Please try again.';
+          _isLoading = false;
+          _isEmailApprovalPending = false;
+        });
+      }
+    }
+  }
+
+  void _handleSaveEdits(String editedContent) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await _chatService.handleEmailApproval('approve',
+          editedContent: editedContent);
+
+      if (mounted) {
+        setState(() {
+          _llmResponse = response;
+          _isLoading = false;
+          _isEmailApprovalPending = false; // Hide buttons after sending
         });
       }
     } catch (e) {
@@ -105,6 +134,7 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
                 onApprove: () => _handleApprovalAction('approve'),
                 onCancel: () => _handleApprovalAction('cancel'),
                 onEdit: () => _handleApprovalAction('edit'),
+                onSaveEdits: _handleSaveEdits,
               ),
             ),
 
