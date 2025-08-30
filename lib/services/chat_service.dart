@@ -8,8 +8,10 @@ import 'email/email_service.dart';
 class ChatService {
   final LLMService _llmService = LLMService(provider: LLMProviderType.openai);
   final ToolOrchestrator _toolOrchestrator = ToolOrchestrator();
+  // Add an instance of the EmailService
   final EmailService _emailService = EmailService();
 
+  // Store the pending email tool call for approval
   ToolCall? _pendingEmailToolCall;
 
   ChatService() {
@@ -25,7 +27,9 @@ class ChatService {
       if (llmResponse.hasToolCalls) {
         final toolCall = llmResponse.toolCalls!.first;
 
+        // Check if the LLM wants to create an email
         if (toolCall.toolName == 'create_email') {
+          // Store the tool call and format a message for user approval
           _pendingEmailToolCall = toolCall;
           final arguments = toolCall.arguments;
           final recipient = arguments['recipient'] as String;
@@ -54,6 +58,7 @@ class ChatService {
     final arguments = _pendingEmailToolCall!.arguments;
     final recipient = arguments['recipient'] as String;
     final subject = arguments['subject'] as String;
+    String content = arguments['content'] as String; // Get the content here
 
     if (action == 'cancel') {
       cancelEmailDraft();
@@ -61,14 +66,18 @@ class ChatService {
     }
 
     if (action == 'edit' && editedContent != null) {
-      arguments['content'] = editedContent;
+      content = editedContent;
     }
 
     try {
+      // Convert newlines to HTML <br> tags for correct formatting in email clients
+      String htmlContent = content.replaceAll('\n', '<br>');
+
+      // Use the email creation method
       final result = await _emailService.createEmail(
-        recipient: arguments['recipient'],
-        subject: arguments['subject'],
-        content: arguments['content'],
+        recipient: recipient,
+        subject: subject,
+        content: htmlContent, // Pass the HTML-formatted content
         priority: arguments['priority'] ?? 'normal',
       );
 
@@ -82,10 +91,12 @@ class ChatService {
     }
   }
 
+  /// Cancels the current email draft.
   void cancelEmailDraft() {
     _pendingEmailToolCall = null;
   }
 
+  /// Retrieves the content of the pending email for editing.
   String getPendingEmailContent() {
     if (_pendingEmailToolCall != null) {
       final args = _pendingEmailToolCall!.arguments;
