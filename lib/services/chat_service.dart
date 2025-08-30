@@ -58,37 +58,57 @@ class ChatService {
     final arguments = _pendingEmailToolCall!.arguments;
     final recipient = arguments['recipient'] as String;
     final subject = arguments['subject'] as String;
-    String content = arguments['content'] as String; // Get the content here
+    String content = arguments['content'] as String;
 
     if (action == 'cancel') {
       cancelEmailDraft();
       return 'Email draft has been cancelled.';
     }
 
-    if (action == 'edit' && editedContent != null) {
-      content = editedContent;
+    if (action == 'edit') {
+      // For edit action, return a message asking user to provide their edits
+      // Keep the pending email so they can still approve/cancel after editing
+      return 'Please provide your edits to the email draft. You can type your revised content, and I will update the draft for you.\n\n'
+          'Current draft:\n\n'
+          'To: $recipient\n\n'
+          'Subject: $subject\n\n'
+          '$content';
     }
 
-    try {
-      // Convert newlines to HTML <br> tags for correct formatting in email clients
-      String htmlContent = content.replaceAll('\n', '<br>');
-
-      // Use the email creation method
-      final result = await _emailService.createEmail(
-        recipient: recipient,
-        subject: subject,
-        content: htmlContent, // Pass the HTML-formatted content
-        priority: arguments['priority'] ?? 'normal',
-      );
-
-      if (result.success) {
-        return 'Email sent successfully!';
-      } else {
-        return 'Failed to send email: ${result.message}';
+    // Handle approve action or edit with provided content
+    if (action == 'approve' || editedContent != null) {
+      if (editedContent != null) {
+        content = editedContent;
+        // Update the pending tool call with new content
+        _pendingEmailToolCall!.arguments['content'] = content;
       }
-    } catch (e) {
-      return 'An error occurred while sending the email: ${e.toString()}';
+
+      try {
+        // Convert newlines to HTML <br> tags for correct formatting in email clients
+        String htmlContent = content.replaceAll('\n', '<br>');
+
+        // Use the email creation method
+        final result = await _emailService.createEmail(
+          recipient: recipient,
+          subject: subject,
+          content: htmlContent,
+          priority: arguments['priority'] ?? 'normal',
+        );
+
+        // Clear the pending email after attempting to send
+        _pendingEmailToolCall = null;
+
+        if (result.success) {
+          return 'Email sent successfully!';
+        } else {
+          return 'Failed to send email: ${result.message}';
+        }
+      } catch (e) {
+        return 'An error occurred while sending the email: ${e.toString()}';
+      }
     }
+
+    return 'Invalid action specified.';
   }
 
   /// Cancels the current email draft.
