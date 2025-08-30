@@ -1,137 +1,195 @@
 // lib/widgets/chat_response_widget.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatResponseWidget extends StatelessWidget {
   final String response;
   final bool isLoading;
   final bool isEmailApprovalPending;
-  final VoidCallback? onApprove;
-  final VoidCallback? onEdit;
-  final VoidCallback? onCancel;
+  final VoidCallback onApprove;
+  final VoidCallback onCancel;
+  final VoidCallback onEdit;
 
   const ChatResponseWidget({
     Key? key,
     required this.response,
     required this.isLoading,
-    this.isEmailApprovalPending = false,
-    this.onApprove,
-    this.onEdit,
-    this.onCancel,
+    required this.isEmailApprovalPending,
+    required this.onApprove,
+    required this.onCancel,
+    required this.onEdit,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Check if the response contains an email draft
+    final isEmailDraft =
+        response.contains('I have drafted the following email for you.');
+
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16.0),
-      padding: const EdgeInsets.all(20.0),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: isEmailDraft
+                  ? _EmailDraftWidget(draft: response)
+                  : MarkdownBody(
+                      data: isLoading ? '...' : response,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.0,
+                          height: 1.5,
+                        ),
+                        strong: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+            ),
+          ),
+          if (isEmailApprovalPending) ...[
+            const SizedBox(height: 16),
+            _buildApprovalButtons(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovalButtons() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            if (isLoading)
-              _buildLoadingIndicator()
-            else if (response.isEmpty)
-              _buildEmptyState()
-            else
-              _buildResponseContent(),
-            if (isEmailApprovalPending) _buildApprovalButtons(),
+            ElevatedButton.icon(
+              onPressed: onApprove,
+              icon: const Icon(Icons.check, size: 20),
+              label: const Text('Approve'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0)),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: onCancel,
+              icon: const Icon(Icons.close, size: 20),
+              label: const Text('Cancel'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: onEdit,
+          child: const Text(
+            'Edit Draft',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A private widget to display a visually pleasing email draft.
+class _EmailDraftWidget extends StatelessWidget {
+  final String draft;
+
+  const _EmailDraftWidget({Key? key, required this.draft}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Simple parsing logic
+    final parts = draft.split('\n\n');
+    final recipientLine = parts[1].substring(5).trim();
+    final subjectLine = parts[2].substring(9).trim();
+    String content = parts.skip(3).join('\n\n').trim();
+
+    // Remove "Subject:" from the content if it's there
+    content = content.replaceFirst(RegExp(r'^Subject:\s*'), '').trim();
+
+    // Replace [Your Name] with twilly
+    content = content.replaceAll('[Your Name]', 'twilly');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900], // Dark background for the email container
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header for "New Draft"
+            const Center(
+              child: Text(
+                'Email Draft',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
+                ),
+              ),
+            ),
+            const Divider(color: Colors.white38, height: 24),
+
+            // Recipient and Subject
+            _buildInfoRow('To:', recipientLine),
+            _buildInfoRow('Subject:', subjectLine),
+            const Divider(color: Colors.white38, height: 24),
+
+            // Email Body
+            Text(
+              content,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16.0,
+                height: 1.5,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return const Column(
-      children: [
-        CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-          strokeWidth: 2.0,
-        ),
-        SizedBox(height: 16.0),
-        Text(
-          'Thinking...',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 16.0,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const Column(
-      children: [
-        Icon(
-          Icons.chat_bubble_outline,
-          size: 48.0,
-          color: Colors.white30,
-        ),
-        SizedBox(height: 16.0),
-        Text(
-          'Ask me what task you need help with!',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 16.0,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResponseContent() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(color: Colors.grey[700]!, width: 1.0),
-      ),
-      child: Text(
-        response,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16.0,
-          height: 1.5,
-        ),
-        textAlign: TextAlign.left,
-      ),
-    );
-  }
-
-  Widget _buildApprovalButtons() {
-    // Wrap the Row with a SingleChildScrollView to prevent overflow
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildButton('Approve', Colors.green, onApprove),
-          const SizedBox(width: 12.0),
-          _buildButton('Edit', Colors.blue, onEdit),
-          const SizedBox(width: 12.0),
-          _buildButton('Cancel', Colors.red, onCancel),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14.0,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14.0,
+              ),
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildButton(String text, Color color, VoidCallback? onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-      ),
-      child: Text(text),
     );
   }
 }

@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+  flutter_markdown: ^0.6.1 
+
   # HTTP requests
   http: ^1.1.0
   

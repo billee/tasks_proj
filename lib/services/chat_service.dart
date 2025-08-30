@@ -3,7 +3,7 @@ import 'llm_service.dart';
 import 'tool_orchestrator.dart';
 import 'base_tool_service.dart';
 import '../models/llm_models.dart';
-import 'email/email_service.dart'; // Add this import
+import 'email/email_service.dart';
 
 class ChatService {
   final LLMService _llmService = LLMService(provider: LLMProviderType.openai);
@@ -32,40 +32,48 @@ class ChatService {
           // Store the tool call and format a message for user approval
           _pendingEmailToolCall = toolCall;
           final arguments = toolCall.arguments;
-          return _formatEmailForApproval(
-            arguments['recipient'],
-            arguments['subject'],
-            arguments['content'],
-          );
-        } else {
-          // Process other tool calls normally
-          final executionResult =
-              await _toolOrchestrator.processLLMResponse(llmResponse);
-          if (executionResult.success) {
-            return _formatToolResults(executionResult.toolResults);
-          } else {
-            return 'Failed to execute tools: ${executionResult.message}';
-          }
+          final recipient = arguments['recipient'] as String;
+          final subject = arguments['subject'] as String;
+          final content = arguments['content'] as String;
+          return _formatEmailForApproval(recipient, subject, content);
         }
+
+        // Execute any other tool calls
+        final toolResults =
+            await _toolOrchestrator.executeToolCalls(llmResponse.toolCalls!);
+        return _formatToolResults(toolResults);
       } else {
         return llmResponse.content;
       }
     } catch (e) {
-      return 'Sorry, I encountered an error while processing your message: ${e.toString()}';
+      return 'Sorry, an error occurred: ${e.toString()}';
     }
   }
 
-  /// Sends the previously approved email.
-  Future<String> sendApprovedEmail() async {
+  /// Handles the user's action (approve, cancel, edit) on a pending email.
+  Future<String> handleEmailApproval(String action,
+      {String? editedContent}) async {
     if (_pendingEmailToolCall == null) {
-      return 'No email draft to send.';
+      return 'No email draft is currently pending.';
     }
 
     final arguments = _pendingEmailToolCall!.arguments;
-    _pendingEmailToolCall = null; // Clear the pending state
+    final recipient = arguments['recipient'] as String;
+    final subject = arguments['subject'] as String;
+
+    if (action == 'cancel') {
+      cancelEmailDraft();
+      return 'Email draft has been cancelled.';
+    }
+
+    if (action == 'edit' && editedContent != null) {
+      // Logic for handling the edited content goes here
+      // For now, we'll just update the content and proceed to send.
+      arguments['content'] = editedContent;
+    }
 
     try {
-      // Directly call the email service's creation method
+      // Use the email creation method
       final result = await _emailService.createEmail(
         recipient: arguments['recipient'],
         subject: arguments['subject'],
@@ -100,18 +108,13 @@ class ChatService {
   String _formatEmailForApproval(
       String recipient, String subject, String content) {
     return 'I have drafted the following email for you. Would you like to send it?\n\n'
-        '**To:** $recipient\n'
-        '**Subject:** $subject\n'
-        '**Content:**\n$content';
+        'To: $recipient\n'
+        'Subject: $subject\n'
+        'Content:\n$content';
   }
 
-  String _formatToolResults(List<ToolResult> results) {
-    return results.map((result) {
-      if (result.success) {
-        return '✅ ${result.message}';
-      } else {
-        return '❌ ${result.message}';
-      }
-    }).join('\n');
+  String _formatToolResults(List<ToolResult> toolResults) {
+    // Logic for formatting tool results
+    return 'Tool results: ${toolResults.first.success}';
   }
 }

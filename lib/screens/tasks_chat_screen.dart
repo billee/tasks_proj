@@ -41,8 +41,9 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
         setState(() {
           _llmResponse = response;
           _isLoading = false;
-          // Check if the response is an email for approval
-          if (response.startsWith('I have drafted the following email')) {
+          // Check if the response is an email draft awaiting approval
+          if (response
+              .contains('I have drafted the following email for you.')) {
             _isEmailApprovalPending = true;
           }
         });
@@ -52,29 +53,19 @@ class _TasksChatScreenState extends State<TasksChatScreen> {
         setState(() {
           _llmResponse = 'Sorry, something went wrong. Please try again.';
           _isLoading = false;
+          _isEmailApprovalPending = false;
         });
       }
     }
   }
 
-  // New method to handle button presses
   void _handleApprovalAction(String action) async {
     setState(() {
       _isLoading = true;
-      _llmResponse = '';
     });
 
     try {
-      String response = '';
-      if (action == 'approve') {
-        response = await _chatService.sendApprovedEmail();
-      } else if (action == 'cancel') {
-        _chatService.cancelEmailDraft();
-        response = 'Email draft cancelled.';
-      } else if (action == 'edit') {
-        response = 'What changes would you like to make?';
-        _chatController.text = _chatService.getPendingEmailContent();
-      }
+      final response = await _chatService.handleEmailApproval(action);
 
       if (mounted) {
         setState(() {
