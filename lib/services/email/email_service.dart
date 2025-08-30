@@ -1,13 +1,15 @@
 // lib/services/email/email_service.dart
-import 'dart:math';
-import 'data_sources/email_data_source.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models/email_models.dart';
+// The `data_sources` import is no longer needed
+// import 'data_sources/email_data_source.dart';
 
 class EmailService {
-  final EmailDataSource dataSource;
-  final Random _random = Random();
+  final String _resendApiKey;
 
-  EmailService({required this.dataSource});
+  EmailService() : _resendApiKey = dotenv.env['RESEND_API_KEY'] ?? '';
 
   Future<EmailCreationResult> createEmail({
     required String recipient,
@@ -15,111 +17,80 @@ class EmailService {
     required String content,
     String priority = 'normal',
   }) async {
-    // Validate email format
-    if (!_isValidEmail(recipient)) {
+    if (_resendApiKey.isEmpty) {
       return EmailCreationResult(
         success: false,
         emailId: '',
         subject: subject,
         recipient: recipient,
         content: content,
-        message: 'Invalid email address format: $recipient',
+        message:
+            'Resend API key not found in .env file. Please check your setup.',
       );
     }
 
-    // Simulate email creation delay
-    await Future.delayed(Duration(milliseconds: 800 + _random.nextInt(700)));
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.resend.com/emails'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_resendApiKey',
+        },
+        body: json.encode({
+          // NOTE: You must replace `onboarding@resend.dev` with an email address
+          // from a domain you have verified in your Resend account.
+          'from': 'onboarding@resend.dev',
+          'to': [recipient],
+          'subject': subject,
+          'html': '<p>$content</p>',
+        }),
+      );
 
-    // Generate realistic email ID
-    final emailId = _generateRealisticEmailId();
-
-    // Simulate occasional failures
-    if (_random.nextDouble() < 0.1) {
+      if (response.statusCode == 200) {
+        return EmailCreationResult(
+          success: true,
+          emailId: 'real-email-${DateTime.now().millisecondsSinceEpoch}',
+          subject: subject,
+          recipient: recipient,
+          content: content,
+          message: 'Email sent successfully via Resend API!',
+        );
+      } else {
+        return EmailCreationResult(
+          success: false,
+          emailId: '',
+          subject: subject,
+          recipient: recipient,
+          content: content,
+          message:
+              'Failed to send email. Status: ${response.statusCode}, Body: ${response.body}',
+        );
+      }
+    } catch (e) {
       return EmailCreationResult(
         success: false,
         emailId: '',
         subject: subject,
         recipient: recipient,
         content: content,
-        message: 'Email server temporarily unavailable. Please try again.',
+        message: 'An error occurred while sending the email: ${e.toString()}',
       );
     }
-
-    // Store email status
-    final status = EmailStatus(
-      emailId: emailId,
-      status: 'queued',
-      timestamp: DateTime.now(),
-    );
-
-    await dataSource.saveEmailStatus(status);
-
-    return EmailCreationResult(
-      success: true,
-      emailId: emailId,
-      subject: subject,
-      recipient: recipient,
-      content: content,
-      message: 'Email created successfully and queued for delivery',
-    );
   }
+
+  // The following methods will no longer work without a local data source
+  // and need to be re-implemented to use the Resend API if you need them.
+  // For now, they will return a generic failure message.
 
   Future<Map<String, dynamic>> getEmailStatus(String emailId) async {
-    await Future.delayed(Duration(milliseconds: 500));
-
-    final existingStatus = await dataSource.getEmailStatus(emailId);
-
-    if (existingStatus != null) {
-      // Simulate status progression
-      final statuses = ['queued', 'sent', 'delivered'];
-      final currentIndex = statuses.indexOf(existingStatus.status);
-      String newStatus = existingStatus.status;
-
-      if (currentIndex < statuses.length - 1 && _random.nextDouble() < 0.7) {
-        newStatus = statuses[currentIndex + 1];
-      } else if (_random.nextDouble() < 0.05) {
-        newStatus = 'failed';
-      }
-
-      final updatedStatus = EmailStatus(
-        emailId: emailId,
-        status: newStatus,
-        timestamp: DateTime.now(),
-      );
-
-      await dataSource.saveEmailStatus(updatedStatus);
-
-      return {
-        'success': true,
-        'data': updatedStatus.toJson(),
-      };
-    }
-
-    // For unknown emails, generate random status
-    final statuses = ['queued', 'sent', 'delivered', 'failed'];
-    final randomStatus = statuses[_random.nextInt(statuses.length)];
-
     return {
-      'success': true,
+      'success': false,
       'data': {
         'email_id': emailId,
-        'status': randomStatus,
+        'status': 'unavailable',
         'timestamp': DateTime.now().toIso8601String(),
+        'message': 'Status retrieval is not implemented with Resend API.',
       },
     };
-  }
-
-  String _generateRealisticEmailId() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = _random.nextInt(999999);
-    final prefix = ['MSG', 'EML', 'MAIL'][_random.nextInt(3)];
-    return '${prefix}_${timestamp.toString().substring(8)}_${random.toString().padLeft(6, '0')}';
-  }
-
-  bool _isValidEmail(String email) {
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
-    return emailRegex.hasMatch(email);
   }
 }

@@ -3,10 +3,13 @@ import 'llm_service.dart';
 import 'tool_orchestrator.dart';
 import 'base_tool_service.dart';
 import '../models/llm_models.dart';
+import 'email/email_service.dart'; // Add this import
 
 class ChatService {
   final LLMService _llmService = LLMService(provider: LLMProviderType.openai);
   final ToolOrchestrator _toolOrchestrator = ToolOrchestrator();
+  // Add an instance of the EmailService
+  final EmailService _emailService = EmailService();
 
   // Store the pending email tool call for approval
   ToolCall? _pendingEmailToolCall;
@@ -58,15 +61,18 @@ class ChatService {
       return 'No email draft to send.';
     }
 
-    // Create a new tool call for sending the email using the stored arguments
-    final sendEmailToolCall = ToolCall(
-      toolName: 'send_email',
-      arguments: _pendingEmailToolCall!.arguments,
-    );
+    final arguments = _pendingEmailToolCall!.arguments;
     _pendingEmailToolCall = null; // Clear the pending state
 
     try {
-      final result = await _toolOrchestrator.executeToolCall(sendEmailToolCall);
+      // Directly call the email service's creation method
+      final result = await _emailService.createEmail(
+        recipient: arguments['recipient'],
+        subject: arguments['subject'],
+        content: arguments['content'],
+        priority: arguments['priority'] ?? 'normal',
+      );
+
       if (result.success) {
         return 'Email sent successfully!';
       } else {
