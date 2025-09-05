@@ -18,6 +18,7 @@ class LLMService {
   late BaseLLMProvider _currentProvider;
   List<Map<String, dynamic>> _conversationHistory = [];
 
+  //===============setting to openai
   LLMService({LLMProviderType provider = LLMProviderType.openai}) {
     setProvider(provider);
     _toolOrchestrator.initialize();
@@ -26,6 +27,7 @@ class LLMService {
   }
 
   void setProvider(LLMProviderType provider) {
+    print('==========================llm_service.dart');
     print('==================Switching LLM provider to: ${provider.name}');
     switch (provider) {
       case LLMProviderType.openai:
@@ -43,6 +45,7 @@ class LLMService {
   BaseLLMProvider get currentProvider => _currentProvider;
 
   Future<LLMResponse> sendMessage(String userMessage) async {
+    print('======================= llm_service.dart ========================');
     print('======================= LLMService.sendMessage called ===');
     print('User message: $userMessage');
     print(
@@ -58,12 +61,12 @@ class LLMService {
         '======================Available tools: ${tools.map((t) => t.name).toList()}');
 
     // Send message with conversation history and tools
-    print('======================Sending to LLM provider...');
+    print('======================Sending to base_llm_provider.dart...');
     final response = await _currentProvider.sendMessage(
       userMessage,
       conversationHistory: _conversationHistory,
       tools: tools,
-    );
+    ); //===================================go to base_llm_provider.dart - openai_provider.dart
 
     print('==================LLM response: ${response.content}');
     if (response.toolCalls != null) {
