@@ -21,6 +21,8 @@ class OpenAIProvider extends BaseLLMProvider {
     List<Map<String, dynamic>> conversationHistory = const [],
     List<LLMTool> tools = const [],
   }) async {
+    print(
+        'rooooooooooooooooooooooooooooooooooooooooooooooo - openai_provider.dart');
     try {
       if (_apiKey.isEmpty) {
         throw Exception(LLMConfig.openaiApiKeyError);

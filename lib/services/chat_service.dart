@@ -4,12 +4,16 @@ import 'tool_orchestrator.dart';
 import 'base_tool_service.dart';
 import '../models/llm_models.dart';
 import 'email/email_service.dart';
+import '../utils/email_validator.dart';
+import 'email_lookup_service.dart';
 
 class ChatService {
   final LLMService _llmService = LLMService(provider: LLMProviderType.openai);
   final ToolOrchestrator _toolOrchestrator = ToolOrchestrator();
   // Add an instance of the EmailService
   final EmailService _emailService = EmailService();
+  // Add the EmailLookupService
+  final EmailLookupService _emailLookupService = EmailLookupService();
 
   // Store the pending email tool call for approval
   ToolCall? _pendingEmailToolCall;
@@ -21,18 +25,38 @@ class ChatService {
 
   Future<String> processUserMessage(String userMessage) async {
     try {
+      print(
+          'ppppppppppppppppppppppppppppppppppppppppp - chat_service.dart - processUserMessage');
       final availableTools = _toolOrchestrator.getAvailableTools();
-      final llmResponse = await _llmService.sendMessage(userMessage);
+      print('==========availableTools: $availableTools');
+      final llmResponse = await _llmService.sendMessage(
+          userMessage); //=================================================== goes to llm_service.dart
 
       if (llmResponse.hasToolCalls) {
         final toolCall = llmResponse.toolCalls!.first;
 
         // Check if the LLM wants to create an email
         if (toolCall.toolName == 'create_email') {
+          // Validate the recipient email address
+          final arguments = toolCall.arguments;
+          String recipient = arguments['recipient'] as String;
+
+          if (!EmailValidator.isValidEmail(recipient)) {
+            final lookedUpEmail =
+                await _emailLookupService.lookupEmailByName(recipient);
+            if (lookedUpEmail != null) {
+              arguments['recipient'] = lookedUpEmail;
+              recipient = lookedUpEmail;
+            } else {
+              //if there is no email found then return below.
+              return 'ðŸ"§ I need an email address to send this message.\n\n'
+                  '"$recipient" appears to be a name, but I need their actual email address.\n\n'
+                  'âœ¨ Could you please provide $recipient\'s email address?\n\n';
+            }
+          }
+
           // Store the tool call and format a message for user approval
           _pendingEmailToolCall = toolCall;
-          final arguments = toolCall.arguments;
-          final recipient = arguments['recipient'] as String;
           final subject = arguments['subject'] as String;
           final content = arguments['content'] as String;
           return _formatEmailForApproval(recipient, subject, content);

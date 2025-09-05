@@ -18,6 +18,10 @@ dependencies:
   # Environment variables
   flutter_dotenv: ^5.1.0
   
+  # Firebase
+  cloud_firestore: ^4.13.0
+  firebase_core: ^2.24.0
+  
   # UI
   cupertino_icons: ^1.0.2
 
