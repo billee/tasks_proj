@@ -56,7 +56,7 @@ class EmailLookupService {
       }
 
       print(
-          'Attempting to save contact: name=$name, emailAddress=$emailAddress');
+          '=================================Attempting to save contact: name=$name, emailAddress=$emailAddress');
 
       // Normalize the name for consistent storage and lookup
       final normalizedName = name.trim().toLowerCase();
@@ -76,7 +76,8 @@ class EmailLookupService {
           .doc(normalizedName)
           .set(emailLookup.toMap(), SetOptions(merge: true));
 
-      print('Firestore save result: success');
+      print(
+          '======================Firestore save result for the contact: success');
       return true;
     } catch (e) {
       print('Firestore save result: failure - Error saving email contact: $e');
@@ -101,6 +102,8 @@ class EmailLookupService {
       if (querySnapshot.docs.isNotEmpty) {
         final doc = querySnapshot.docs.first;
         final data = doc.data() as Map<String, dynamic>;
+        print(
+            '=================Email address found for name "$name", ${data['email_address']}');
         return data['email_address'] as String?;
       }
 

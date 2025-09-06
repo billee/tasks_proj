@@ -18,6 +18,13 @@ class ChatService {
   // Store the pending email tool call for approval
   ToolCall? _pendingEmailToolCall;
 
+  // State management variables for email contact workflow
+  String? _pendingContactName;
+  Map<String, dynamic>? _originalEmailArgs;
+
+  // Add this flag to track if we're waiting for an email address
+  bool _isWaitingForEmail = false;
+
   ChatService() {
     _llmService.setProvider(LLMProviderType.openai);
     _toolOrchestrator.initialize();
@@ -27,6 +34,13 @@ class ChatService {
     try {
       print(
           'ppppppppppppppppppppppppppppppppppppppppp - chat_service.dart - processUserMessage');
+
+      // Check if we're waiting for an email address
+      if (_isWaitingForEmailAddress(userMessage)) {
+        print('-----------------------waiting for email address');
+        return await _handleEmailAddressResponse(userMessage);
+      }
+
       final availableTools = _toolOrchestrator.getAvailableTools();
       print('==========availableTools: $availableTools');
       final llmResponse = await _llmService.sendMessage(
@@ -48,6 +62,11 @@ class ChatService {
               arguments['recipient'] = lookedUpEmail;
               recipient = lookedUpEmail;
             } else {
+              // Store the original email arguments and contact name for later use
+              _originalEmailArgs = Map<String, dynamic>.from(arguments);
+              _pendingContactName = recipient;
+              _isWaitingForEmail = true;
+
               //if there is no email found then return below.
               return 'I need an email address to send this message.\n\n'
                   '"$recipient" appears to be a name, but I need their actual email address.\n\n'
@@ -70,6 +89,81 @@ class ChatService {
       }
     } catch (e) {
       return 'Sorry, an error occurred: ${e.toString()}';
+    }
+  }
+
+  // NEW METHOD: Check if we're waiting for an email address
+  bool _isWaitingForEmailAddress(String userMessage) {
+    return _isWaitingForEmail &&
+        _pendingContactName != null &&
+        _originalEmailArgs != null;
+  }
+
+  // NEW METHOD: Handle the user's email address response
+  Future<String> _handleEmailAddressResponse(String userMessage) async {
+    try {
+      // Extract potential email from user message
+      final emailMatch =
+          RegExp(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+              .firstMatch(userMessage);
+
+      if (emailMatch == null ||
+          !EmailValidator.isValidEmail(emailMatch.group(0)!)) {
+        return 'Please provide a valid email address for $_pendingContactName.\n\n'
+            'Example: john.smith@example.com';
+      }
+
+      final emailAddress = emailMatch.group(0)!;
+      final contactName = _pendingContactName!;
+      final originalArgs = _originalEmailArgs!;
+
+      print('Extracted email: $emailAddress for contact: $contactName');
+
+      // Save the contact for future use
+      final saveSuccess =
+          await _emailLookupService.saveEmailContact(contactName, emailAddress);
+
+      if (!saveSuccess) {
+        print('Failed to save contact, but continuing with email creation...');
+      } else {
+        print('Contact saved successfully: $contactName -> $emailAddress');
+      }
+
+      // Update the original email arguments with the provided email
+      originalArgs['recipient'] = emailAddress;
+
+      // Create the tool call with updated arguments
+      _pendingEmailToolCall = ToolCall(
+        toolName: 'create_email',
+        arguments: originalArgs,
+      );
+
+      // Clear the waiting state
+      _isWaitingForEmail = false;
+      _pendingContactName = null;
+      _originalEmailArgs = null;
+
+      // Format the email for approval
+      final subject = originalArgs['subject'] as String;
+      final content = originalArgs['content'] as String;
+
+      String approvalMessage = '';
+      if (saveSuccess) {
+        approvalMessage =
+            'Great! I\'ve saved $contactName\'s email address ($emailAddress) for future use.\n\n';
+      }
+
+      approvalMessage +=
+          _formatEmailForApproval(emailAddress, subject, content);
+
+      return approvalMessage;
+    } catch (e) {
+      // Reset state on error
+      _isWaitingForEmail = false;
+      _pendingContactName = null;
+      _originalEmailArgs = null;
+
+      return 'Sorry, there was an error processing the email address: ${e.toString()}';
     }
   }
 
@@ -145,9 +239,13 @@ class ChatService {
     return _formatEmailForApproval(recipient, subject, editedContent);
   }
 
-  /// Cancels the current email draft.
+  /// Cancels the current email draft and resets waiting state.
   void cancelEmailDraft() {
     _pendingEmailToolCall = null;
+    // Also reset the waiting for email state if active
+    _isWaitingForEmail = false;
+    _pendingContactName = null;
+    _originalEmailArgs = null;
   }
 
   /// Retrieves the content of the pending email for editing.
@@ -158,6 +256,12 @@ class ChatService {
     }
     return '';
   }
+
+  // NEW METHOD: Check if we're currently waiting for email input
+  bool get isWaitingForEmailAddress => _isWaitingForEmail;
+
+  // NEW METHOD: Get the name we're waiting for an email address for
+  String? get pendingContactName => _pendingContactName;
 
   String _formatEmailForApproval(
       String recipient, String subject, String content) {
