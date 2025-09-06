@@ -49,9 +49,9 @@ class ChatService {
               recipient = lookedUpEmail;
             } else {
               //if there is no email found then return below.
-              return 'ðŸ"§ I need an email address to send this message.\n\n'
+              return 'I need an email address to send this message.\n\n'
                   '"$recipient" appears to be a name, but I need their actual email address.\n\n'
-                  'âœ¨ Could you please provide $recipient\'s email address?\n\n';
+                  'Could you please provide $recipient\'s email address?\n\n';
             }
           }
 
