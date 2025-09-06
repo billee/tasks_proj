@@ -4,6 +4,7 @@ import '../base_tool_service.dart';
 import '../../models/llm_models.dart';
 import 'models/email_models.dart';
 import 'email_service.dart';
+import '../email_lookup_service.dart';
 // The `LocalEmailDataSource` import is no longer needed
 // import 'data_sources/local_email_data_source.dart';
 
@@ -12,9 +13,12 @@ class EmailToolService extends BaseToolService {
   static const String _serviceName = 'Email Service';
 
   final EmailService _emailService;
+  final EmailLookupService _emailLookupService;
 
   // The EmailService constructor no longer requires a data source.
-  EmailToolService() : _emailService = EmailService();
+  EmailToolService()
+      : _emailService = EmailService(),
+        _emailLookupService = EmailLookupService();
 
   @override
   String get serviceId => _serviceId;
@@ -86,6 +90,25 @@ class EmailToolService extends BaseToolService {
             'required': [],
           },
         ),
+        LLMTool(
+          name: 'save_email_contact',
+          description:
+              'Save a contact name and email address for future lookup',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'name': {
+                'type': 'string',
+                'description': 'Full name of the contact person',
+              },
+              'email_address': {
+                'type': 'string',
+                'description': 'Valid email address of the contact',
+              },
+            },
+            'required': ['name', 'email_address'],
+          },
+        ),
       ];
 
   @override
@@ -105,6 +128,8 @@ class EmailToolService extends BaseToolService {
           return await _getEmailStatus(validatedArgs);
         case 'get_email_history':
           return await _getEmailHistory(validatedArgs);
+        case 'save_email_contact':
+          return await _saveEmailContact(validatedArgs);
         default:
           throw ToolExecutionException('Unknown tool: ${toolCall.toolName}');
       }
@@ -150,5 +175,23 @@ class EmailToolService extends BaseToolService {
       'Email history feature not implemented yet with Resend API',
       {'limit': limit, 'status_filter': statusFilter},
     );
+  }
+
+  Future<ToolResult> _saveEmailContact(Map<String, dynamic> arguments) async {
+    final name = arguments['name'] as String;
+    final emailAddress = arguments['email_address'] as String;
+
+    final success =
+        await _emailLookupService.saveEmailContact(name, emailAddress);
+
+    if (success) {
+      return createSuccessResult(
+        'Contact saved: $name -> $emailAddress',
+        {'name': name, 'email_address': emailAddress, 'saved': true},
+      );
+    } else {
+      return createErrorResult(
+          'Failed to save contact: $name -> $emailAddress');
+    }
   }
 }
