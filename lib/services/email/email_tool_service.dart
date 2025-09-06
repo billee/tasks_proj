@@ -119,6 +119,7 @@ class EmailToolService extends BaseToolService {
 
       switch (toolCall.toolName) {
         case 'create_email':
+          print('------------------ case: create_email');
           final result = await _createEmail(validatedArgs);
           return createSuccessResult(
             result.message,
@@ -129,6 +130,7 @@ class EmailToolService extends BaseToolService {
         case 'get_email_history':
           return await _getEmailHistory(validatedArgs);
         case 'save_email_contact':
+          print('------------------ case: save_email_contact');
           return await _saveEmailContact(validatedArgs);
         default:
           throw ToolExecutionException('Unknown tool: ${toolCall.toolName}');
@@ -186,7 +188,7 @@ class EmailToolService extends BaseToolService {
 
     if (success) {
       return createSuccessResult(
-        'Contact saved: $name -> $emailAddress',
+        '===========================Contact saved: $name -> $emailAddress',
         {'name': name, 'email_address': emailAddress, 'saved': true},
       );
     } else {
